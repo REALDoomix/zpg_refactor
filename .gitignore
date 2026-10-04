@@ -1,0 +1,17 @@
+# Ignore everything in the repository by default
+*
+
+# Allow the specific folders and all of their contents
+!/include/
+!/include/**
+!/Models/
+!/Models/**
+!/shaders/
+!/shaders/**
+
+# Allow only .cpp and .h files in the main (root) directory
+!/*.cpp
+!/*.h
+
+# Always allow the .gitignore file itself to be tracked
+!.gitignore
