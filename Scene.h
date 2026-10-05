@@ -3,23 +3,17 @@
 #include "DrawableObject.h"
 #include "Model.h"
 #include "ShaderProgram.h"
-#include "Transformation.h"
+#include <vector>
 
 class Scene {
 public:
     Scene();
 
     void draw() const;
-    DrawableObject& getGift() { return gift; }
-    DrawableObject& getTree() { return tree; }
+    DrawableObject& addDrawable(Model& model);
+    std::vector<DrawableObject>& getDrawables() { return drawables; }
 
 private:
     ShaderProgram shaderProgram;
-	// pridat vector modelu a vector transformationu, aby se dalo pridavat vice objektu
-    Model giftModel;
-    Model treeModel;
-    Transformation giftTransformation;
-    Transformation treeTransformation;
-    DrawableObject gift;
-    DrawableObject tree;
+    std::vector<DrawableObject> drawables;
 };

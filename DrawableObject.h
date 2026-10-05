@@ -2,19 +2,40 @@
 
 #include "Model.h"
 #include "ShaderProgram.h"
-#include "Transformation.h"
+#include <glm/vec3.hpp>
+#include <glad/gl.h>
 
 class DrawableObject {
 public:
-    DrawableObject(Model& model, ShaderProgram& shaderProgram, Transformation& transformation)
-        : model(model), shaderProgram(shaderProgram), transformation(transformation) {
-    }
+    DrawableObject(Model& model, ShaderProgram& shaderProgram);
 
     void draw() const;
-    Transformation& getTransformation() { return transformation; }
+    
+    // Gettery
+    float getAngle() const { return angle; }
+    glm::vec3 getPosition() const { return position; }
+    float getScale() const { return scale; }
+    Model& getModel() { return model; }
+    ShaderProgram& getShaderProgram() { return shaderProgram; }
+    
+    // Settery
+    void setAngle(float newAngle) { angle = newAngle; }
+    void setPosition(glm::vec3 newPosition) { position = newPosition; }
+	void setScale(float newScale) { scale = newScale; }
+    void setColor(glm::vec3 newColor) { color = newColor; }
+    void addAngle(float deltaAngle) { angle += deltaAngle; }
+    void addPosition(glm::vec3 deltaPosition) { position += deltaPosition; }
 
 private:
     Model& model;
     ShaderProgram& shaderProgram;
-    Transformation& transformation;
+    glm::vec3 position;
+    float angle;
+    float scale;
+    glm::vec3 color;
+
+    mutable GLint angleLoc;
+    mutable GLint positionLoc;
+	mutable GLint scaleLoc;
+    mutable GLint colorLoc;
 };

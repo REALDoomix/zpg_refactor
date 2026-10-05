@@ -5,6 +5,8 @@ layout (location = 1) in vec3 color;
 
 out vec3 vertexColor;
 
+uniform vec3 fragColor;
+
 void main()
 {
     vertexColor = color;

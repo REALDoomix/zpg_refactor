@@ -5,7 +5,9 @@
 
 #include <memory>
 #include <vector>
+
 class Scene;
+class Model;
 
 class Application {
 public:
@@ -17,14 +19,20 @@ public:
 
 private:
     GLFWwindow* window = nullptr;
-    //std::unique_ptr<Scene> scene;
-	std::vector<std::unique_ptr<Scene>> scenes;
-	// predelat na vektor scen, aby se dalo pridavat vice scen
+    std::vector<std::unique_ptr<Scene>> scenes;
+    int currentSceneIndex = 0;
+
+    // Modely
+    std::unique_ptr<Model> bushModel;
+    std::unique_ptr<Model> treeModel;
+    std::unique_ptr<Model> sphereModel;
+	std::unique_ptr<Model> triangleModel;
+	std::unique_ptr<Model> loginModel;
 
     int width = 800;
     int height = 600;
-    float rotationSpeed = 5.0f; // stupňů za frame
-	float movementSpeed = 0.05f;
+    float rotationSpeed = 5.0f;
+    float movementSpeed = 0.05f;
 
     static void error_callback(int error, const char* description);
     static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
