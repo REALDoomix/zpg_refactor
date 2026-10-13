@@ -3,6 +3,8 @@
 #include <glad/gl.h>
 #include <GLFW/glfw3.h>
 
+#include <glm/glm.hpp>
+
 #include <memory>
 #include <vector>
 
@@ -28,6 +30,13 @@ private:
     std::unique_ptr<Model> sphereModel;
 	std::unique_ptr<Model> triangleModel;
 	std::unique_ptr<Model> loginModel;
+
+    std::unique_ptr<Model> sunModel;
+    std::unique_ptr<Model> earthModel;
+    std::unique_ptr<Model> moonModel;
+
+    glm::mat4 viewMatrix;
+    glm::mat4 projectionMatrix;
 
     int width = 800;
     int height = 600;

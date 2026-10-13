@@ -4,16 +4,20 @@
 #include "Model.h"
 #include "ShaderProgram.h"
 #include <vector>
+#include <glm/glm.hpp>
 
 class Scene {
 public:
     Scene();
-
-    void draw() const;
     DrawableObject& addDrawable(Model& model);
+    void draw(const glm::mat4& viewMatrix, const glm::mat4& projectionMatrix) const;
     std::vector<DrawableObject>& getDrawables() { return drawables; }
+
+    void update(float deltaTime);
 
 private:
     ShaderProgram shaderProgram;
     std::vector<DrawableObject> drawables;
+    GLint viewMatrixLoc;
+    GLint projectionMatrixLoc;
 };

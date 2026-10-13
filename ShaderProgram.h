@@ -5,6 +5,8 @@
 #include <glm/vec3.hpp>
 #include <glm/vec4.hpp>
 
+#include <glm/gtc/type_ptr.hpp>
+
 #include <glad/gl.h>
 
 class ShaderProgram {
@@ -24,6 +26,7 @@ public:
     void sendUniform(GLint location, const glm::vec2& vec) const;
     void sendUniform(GLint location, const glm::vec3& vec) const;
     void sendUniform(GLint location, const glm::vec4& vec) const;
+	void sendUniform(GLint location, const glm::mat4& mat) const;
 
 private:
     Shader vertexShader;

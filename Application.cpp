@@ -1,11 +1,21 @@
 #include "Application.h"
 #include "Scene.h"
+
+//modely
 #include "Models/bushes.h"
 #include "Models/vsbLogin.h"
 #include "Models/tree.h"
 #include "Models/sphere.h"
 #include "Models/triangle.h"
+#include "Models/earth.h"
+#include "Models/moon.h"
+#include "Models/sun.h"
+
+
 #include <glm/vec2.hpp>
+
+#include <cstdlib>
+#include <ctime>
 
 #include <iostream>
 #include <stdexcept>
@@ -19,6 +29,9 @@ Application::~Application() {
 }
 
 void Application::initialization() {
+    //start randomizer
+    std::srand(static_cast<unsigned int>(std::time(nullptr)));
+
     glfwSetErrorCallback(error_callback);
 
     if (!glfwInit()) {
@@ -50,36 +63,115 @@ void Application::initialization() {
 	triangleModel = std::make_unique<Model>(::triangle, sizeof(::triangle));
 	loginModel = std::make_unique<Model>(::login, sizeof(::login));
 
-    // Scéna 1
-    scenes.push_back(std::make_unique<Scene>());
-    scenes[0]->addDrawable(*triangleModel).setPosition(glm::vec3(0.0f, 0.0f, 0.0f));
+    sunModel = std::make_unique<Model>(::sun, sizeof(::sun), true);
+    earthModel = std::make_unique<Model>(::earth, sizeof(::earth), true);
+    moonModel = std::make_unique<Model>(::moon, sizeof(::moon), true);
 
-    // Scéna 2
+    // Scéna 1 — demonstrace pořadí transformací (translate vs rotate)
     scenes.push_back(std::make_unique<Scene>());
-    scenes[1]->addDrawable(*sphereModel).setPosition(glm::vec3(-0.5f, 0.5f, 0.0f));
-	scenes[1]->getDrawables()[0].setScale(0.1f);
 
-    // Scéna 3
+    // Translate -> Rotate (T * R)
+    auto compositeA = std::make_unique<TransformationComposite>();
+    compositeA->add(std::make_unique<TranslateTransformation>(glm::vec3(-1.5f, 0.0f, 0.0f)));
+    compositeA->add(std::make_unique<DynamicRotateTransformation>(30.0f, glm::vec3(0.0f, 0.0f, 1.0f)));
+    scenes[0]->addDrawable(*triangleModel).setTransformation(std::move(compositeA)).setColor(glm::vec3(0.0f, 1.0f, 0.0f));
+
+    // Rotate -> Translate (R * T)
+    auto compositeB = std::make_unique<TransformationComposite>();
+    compositeB->add(std::make_unique<DynamicRotateTransformation>(30.0f, glm::vec3(0.0f, 0.0f, 1.0f)));
+    compositeB->add(std::make_unique<TranslateTransformation>(glm::vec3(1.5f, 0.0f, 0.0f)));
+    scenes[0]->addDrawable(*triangleModel).setTransformation(std::move(compositeB)).setColor(glm::vec3(1.0f, 0.0f, 0.0f));
+
+    scenes[0]->addDrawable(*loginModel)
+        .setTransformation(makeStaticTransform(glm::vec3(2.0f, -1.7f, 0.0f), 0.4f));
+
+    // Scéna 2 koule
     scenes.push_back(std::make_unique<Scene>());
-    scenes[2]->addDrawable(*treeModel).setPosition(glm::vec3(8.0f, -8.0f, 0.5f));
-    scenes[2]->getDrawables()[0].setScale(0.1f);
-    for (size_t i = 0; i < 11; i++)
-    {
-		scenes[2]->addDrawable(*treeModel).setPosition(glm::vec3(-7.5f + i*1.6f, -1.0f, 0.5f));
-		scenes[2]->getDrawables()[i+1].setScale(0.1f);
+    scenes[1]->addDrawable(*sphereModel)
+        .setTransformation(makeStaticTransform(glm::vec3(-0.5f, 0.5f, 0.0f), 0.1f));
+    scenes[1]->addDrawable(*loginModel)
+        .setTransformation(makeStaticTransform(glm::vec3(2.0f, -1.7f, 0.0f), 0.4f));
+
+    // Scéna 3 les 
+    scenes.push_back(std::make_unique<Scene>());
+
+    for (int i = 0; i < 11; i++) {
+        scenes[2]->addDrawable(*treeModel)
+            .setTransformation(makeRandomTransform(-5.0f, 5.0f, -1.0f, -6.0f, 2.0f, 0.08f, 0.14f));
     }
-    for (size_t i = 0; i < 11; i++)
-    {
-        scenes[2]->addDrawable(*bushModel).setPosition(glm::vec3(-2.5f + i * 0.5f, -1.0f, 0.5f));
-        scenes[2]->getDrawables()[i+12].setScale(0.2f);
+
+    for (int i = 0; i < 11; i++) {
+        scenes[2]->addDrawable(*bushModel)
+            .setTransformation(makeRandomTransform(-4.0f, 4.0f, -1.0f, -4.0f, 1.0f, 0.4f, 0.6f));
     }
 
-	scenes[2]->addDrawable(*sphereModel).setScale(0.2f);
-    scenes[2]->getDrawables()[23].setPosition(glm::vec3(4.0f, 4.0f, 0.5f));
-	scenes[2]->getDrawables()[23].setColor(glm::vec3(1.0f, 1.0f, 0.0f));
+    scenes[2]->addDrawable(*sphereModel)
+        .setTransformation(makeStaticTransform(glm::vec3(2.0f, 1.8f, 0.5f), 0.2f))
+        .setColor(glm::vec3(1.0f, 1.0f, 0.0f));
+    scenes[2]->addDrawable(*loginModel)
+        .setTransformation(makeStaticTransform(glm::vec3(2.0f, -1.7f, 0.0f), 0.4f));
 
-	scenes.push_back(std::make_unique<Scene>());
-    scenes[3]->addDrawable(*loginModel).setScale(0.4f);
+    // Scéna 4 login
+    scenes.push_back(std::make_unique<Scene>());
+    scenes[3]->addDrawable(*loginModel)
+        .setTransformation(makeStaticTransform(glm::vec3(0.0f, 0.0f, 0.0f), 0.4f));
+    scenes[3]->addDrawable(*loginModel)
+        .setTransformation(makeStaticTransform(glm::vec3(2.0f, -1.7f, 0.0f), 0.4f));
+
+
+    // Scéna 5 — sluneční soustava
+    scenes.push_back(std::make_unique<Scene>());
+   
+    constexpr float earthOrbitSpeed = 20.0f;   // deg/sec around Sun
+    constexpr float earthOrbitRadius = 2.0f;
+    constexpr float earthSpinSpeed = 90.0f;    // deg/sec, own axis
+    constexpr float earthScale = 0.3f;
+
+    constexpr float moonOrbitSpeed = 80.0f;    // deg/sec around Earth
+    constexpr float moonOrbitRadius = 0.8f;
+    constexpr float moonSpinSpeed = 40.0f;
+    constexpr float moonScale = 0.1f;
+
+    // Sun — stays at origin, only spins on its own axis
+    auto sunComposite = std::make_unique<TransformationComposite>();
+    sunComposite->add(std::make_unique<DynamicRotateTransformation>(10.0f, glm::vec3(0.0f, 1.0f, 0.0f)));
+    sunComposite->add(std::make_unique<ScaleTransformation>(glm::vec3(1.0f)));
+    scenes[4]->addDrawable(*sunModel)
+        .setTransformation(std::move(sunComposite));
+
+    // Earth — orbits Sun, spins on its own axis
+    auto earthComposite = std::make_unique<TransformationComposite>();
+    addOrbit(*earthComposite, earthOrbitSpeed, earthOrbitRadius);
+    earthComposite->add(std::make_unique<DynamicRotateTransformation>(earthSpinSpeed, glm::vec3(0.0f, 1.0f, 0.0f)));
+    earthComposite->add(std::make_unique<ScaleTransformation>(glm::vec3(earthScale)));
+    scenes[4]->addDrawable(*earthModel)
+        .setTransformation(std::move(earthComposite));
+
+    // Moon — follows Earth's orbital path AROUND the Sun, then orbits Earth on top of that, then spins
+    auto moonComposite = std::make_unique<TransformationComposite>();
+    addOrbit(*moonComposite, earthOrbitSpeed, earthOrbitRadius);  // same params as Earth's orbit — keeps Moon traveling with Earth
+    addOrbit(*moonComposite, moonOrbitSpeed, moonOrbitRadius);    // Moon's own orbit around Earth
+    moonComposite->add(std::make_unique<DynamicRotateTransformation>(moonSpinSpeed, glm::vec3(0.0f, 1.0f, 0.0f)));
+    moonComposite->add(std::make_unique<ScaleTransformation>(glm::vec3(moonScale)));
+    scenes[4]->addDrawable(*moonModel)
+        .setTransformation(std::move(moonComposite));
+
+    scenes[4]->addDrawable(*loginModel)
+        .setTransformation(makeStaticTransform(glm::vec3(2.0f, -1.7f, 0.0f), 0.4f));
+
+
+    // new
+    viewMatrix = glm::lookAt(
+        glm::vec3(0.0f, 0.0f, 5.0f),   // eye position
+        glm::vec3(0.0f, 0.0f, 0.0f),   // look-at target
+        glm::vec3(0.0f, 1.0f, 0.0f)    // up vector
+    );
+
+    projectionMatrix = glm::perspective(
+        glm::radians(45.0f),
+        static_cast<float>(width) / static_cast<float>(height),
+        0.1f, 100.0f
+    );
 }
 
 void Application::run() {
@@ -105,11 +197,12 @@ void Application::run() {
         if (glfwGetKey(window, GLFW_KEY_4) == GLFW_PRESS) {
             currentSceneIndex = 3;
         }
-
-        scenes[currentSceneIndex]->draw();
-        if (currentSceneIndex == 2) {
-			scenes[2]->getDrawables()[0].addAngle(50.0f * deltaTime);
+        if (glfwGetKey(window, GLFW_KEY_5) == GLFW_PRESS) {
+            currentSceneIndex = 4;
         }
+
+        scenes[currentSceneIndex]->update(deltaTime);
+        scenes[currentSceneIndex]->draw(viewMatrix, projectionMatrix);
         glfwSwapBuffers(window);
         glfwPollEvents();
     }

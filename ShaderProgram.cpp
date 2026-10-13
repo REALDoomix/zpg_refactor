@@ -49,3 +49,8 @@ void ShaderProgram::sendUniform(GLint location, const glm::vec3& vec) const {
 void ShaderProgram::sendUniform(GLint location, const glm::vec4& vec) const {
     glUniform4f(location, vec.x, vec.y, vec.z, vec.w);
 }
+
+void ShaderProgram::sendUniform(GLint location, const glm::mat4& mat) const
+{
+	glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(mat));
+}

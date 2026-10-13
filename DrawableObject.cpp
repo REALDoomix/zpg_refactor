@@ -1,27 +1,38 @@
 #include "DrawableObject.h"
 #include <iostream>
 
+#include "Model.h"
+#include "ShaderProgram.h"
 
 DrawableObject::DrawableObject(Model& model, ShaderProgram& shaderProgram)
-    : model(model), shaderProgram(shaderProgram), position(0.0f, 0.0f, 0.0f), angle(0.0f), scale(1.0f), color(0.0f, 0.0f, 0.0f) {
-    // Cachuj lokace jednou při vytvoření
-    angleLoc = glGetUniformLocation(shaderProgram.getProgram(), "angle");
-    positionLoc = glGetUniformLocation(shaderProgram.getProgram(), "position_offset");
-	scaleLoc = glGetUniformLocation(shaderProgram.getProgram(), "scale");
-	colorLoc = glGetUniformLocation(shaderProgram.getProgram(), "objectColor");
+    : model(model), shaderProgram(shaderProgram), color(0.0f, 0.0f, 0.0f) {
 
-    std::cout << "colorLoc: " << colorLoc << " | color: ("
-        << color.x << ", " << color.y << ", " << color.z << ")" << std::endl;
+    transformation = std::make_unique<TransformationComposite>(); // identity by default
+
+    modelMatrixLoc = glGetUniformLocation(shaderProgram.getProgram(), "modelMatrix");
+    colorLoc = glGetUniformLocation(shaderProgram.getProgram(), "objectColor");
+
+    if (modelMatrixLoc == -1) std::cerr << "Warning: uniform 'modelMatrix' not found" << std::endl;
+    if (colorLoc == -1) std::cerr << "Warning: uniform 'objectColor' not found" << std::endl;
+}
+
+DrawableObject& DrawableObject::setTransformation(std::unique_ptr<ITransformation> transform) {
+    transformation = std::move(transform);
+    return *this;
+}
+
+DrawableObject& DrawableObject::setColor(const glm::vec3& c) {
+    color = c;
+    return *this;
+}
+
+void DrawableObject::update(float deltaTime) {
+    transformation->update(deltaTime);
 }
 
 void DrawableObject::draw() const {
     shaderProgram.use();
-    
-    // Jen pošli uniformy bez volání glGetUniformLocation
-    shaderProgram.sendUniform(angleLoc, angle);
-    shaderProgram.sendUniform(positionLoc, position);
-	shaderProgram.sendUniform(scaleLoc, scale);
+    shaderProgram.sendUniform(modelMatrixLoc, transformation->getMatrix());
     shaderProgram.sendUniform(colorLoc, color);
-    
     model.draw();
 }
