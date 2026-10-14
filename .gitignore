@@ -8,6 +8,8 @@
 !/Models/**
 !/shaders/
 !/shaders/**
+!/Scenes/
+!/Scenes/**
 
 # Allow only .cpp and .h files in the main (root) directory
 !/*.cpp
