@@ -1,4 +1,5 @@
 #include "ShaderProgram.h"
+#include "Camera.h"
 
 #include <stdexcept>
 #include <string>
@@ -29,6 +30,22 @@ ShaderProgram::~ShaderProgram() {
 void ShaderProgram::use() const {
     glUseProgram(programId);
 }
+
+void ShaderProgram::setCamera(Camera* newCamera) {
+    camera = newCamera;
+    viewMatrixLoc = glGetUniformLocation(programId, "viewMatrix");
+    projectionMatrixLoc = glGetUniformLocation(programId, "projectionMatrix");
+    camera->attach(this);
+    onCameraChanged(); // push current matrices immediately, don't wait for the first camera movement
+}
+
+void ShaderProgram::onCameraChanged() {
+    if (!camera) return;
+    use();
+    sendUniform(viewMatrixLoc, camera->getViewMatrix());
+    sendUniform(projectionMatrixLoc, camera->getProjectionMatrix());
+}
+
 // pro posilani napr angle do uniform promenne
 void ShaderProgram::sendUniform(GLint location, float value) const {
     glUniform1f(location, value);

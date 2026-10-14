@@ -2,29 +2,16 @@
 #include <iostream>
 
 
-Scene::Scene()
-    : shaderProgram("shaders/basic.vert", "shaders/basic.frag") {
-    viewMatrixLoc = glGetUniformLocation(shaderProgram.getProgram(), "viewMatrix");
-    projectionMatrixLoc = glGetUniformLocation(shaderProgram.getProgram(), "projectionMatrix");
-
-    if (viewMatrixLoc == -1) {
-        std::cerr << "Warning: uniform 'viewMatrix' not found in shader program" << std::endl;
-    }
-    if (projectionMatrixLoc == -1) {
-        std::cerr << "Warning: uniform 'projectionMatrix' not found in shader program" << std::endl;
-    }
+Scene::Scene(){
+    
 }
 
-DrawableObject& Scene::addDrawable(Model& model) {
+DrawableObject& Scene::addDrawable(Model& model, ShaderProgram& shaderProgram) {
     drawables.emplace_back(model, shaderProgram);
     return drawables.back();
 }
 
-void Scene::draw(const glm::mat4& viewMatrix, const glm::mat4& projectionMatrix) const {
-    shaderProgram.use();
-    shaderProgram.sendUniform(viewMatrixLoc, viewMatrix);
-    shaderProgram.sendUniform(projectionMatrixLoc, projectionMatrix);
-
+void Scene::draw() const {
     for (const auto& drawable : drawables) {
         drawable.draw();
     }

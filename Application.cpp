@@ -1,5 +1,8 @@
 #include "Application.h"
 #include "Scene.h"
+#include "ShaderProgram.h"
+
+#include "./Scenes/SceneFactory.h"
 
 //modely
 #include "Models/bushes.h"
@@ -50,6 +53,13 @@ void Application::initialization() {
     glfwSetKeyCallback(window, key_callback);
     glfwSetFramebufferSizeCallback(window, window_size_callback);
 
+
+    // myš
+
+	glfwSetWindowUserPointer(window, this);
+	glfwSetCursorPosCallback(window, cursor_position_callback);
+	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+
     if (!gladLoadGL((GLADloadfunc)glfwGetProcAddress)) {
         throw std::runtime_error("GLAD initialization failed");
     }
@@ -67,111 +77,22 @@ void Application::initialization() {
     earthModel = std::make_unique<Model>(::earth, sizeof(::earth), true);
     moonModel = std::make_unique<Model>(::moon, sizeof(::moon), true);
 
-    // Scéna 1 — demonstrace pořadí transformací (translate vs rotate)
-    scenes.push_back(std::make_unique<Scene>());
-
-    // Translate -> Rotate (T * R)
-    auto compositeA = std::make_unique<TransformationComposite>();
-    compositeA->add(std::make_unique<TranslateTransformation>(glm::vec3(-1.5f, 0.0f, 0.0f)));
-    compositeA->add(std::make_unique<DynamicRotateTransformation>(30.0f, glm::vec3(0.0f, 0.0f, 1.0f)));
-    scenes[0]->addDrawable(*triangleModel).setTransformation(std::move(compositeA)).setColor(glm::vec3(0.0f, 1.0f, 0.0f));
-
-    // Rotate -> Translate (R * T)
-    auto compositeB = std::make_unique<TransformationComposite>();
-    compositeB->add(std::make_unique<DynamicRotateTransformation>(30.0f, glm::vec3(0.0f, 0.0f, 1.0f)));
-    compositeB->add(std::make_unique<TranslateTransformation>(glm::vec3(1.5f, 0.0f, 0.0f)));
-    scenes[0]->addDrawable(*triangleModel).setTransformation(std::move(compositeB)).setColor(glm::vec3(1.0f, 0.0f, 0.0f));
-
-    scenes[0]->addDrawable(*loginModel)
-        .setTransformation(makeStaticTransform(glm::vec3(2.0f, -1.7f, 0.0f), 0.4f));
-
-    // Scéna 2 koule
-    scenes.push_back(std::make_unique<Scene>());
-    scenes[1]->addDrawable(*sphereModel)
-        .setTransformation(makeStaticTransform(glm::vec3(-0.5f, 0.5f, 0.0f), 0.1f));
-    scenes[1]->addDrawable(*loginModel)
-        .setTransformation(makeStaticTransform(glm::vec3(2.0f, -1.7f, 0.0f), 0.4f));
-
-    // Scéna 3 les 
-    scenes.push_back(std::make_unique<Scene>());
-
-    for (int i = 0; i < 11; i++) {
-        scenes[2]->addDrawable(*treeModel)
-            .setTransformation(makeRandomTransform(-5.0f, 5.0f, -1.0f, -6.0f, 2.0f, 0.08f, 0.14f));
-    }
-
-    for (int i = 0; i < 11; i++) {
-        scenes[2]->addDrawable(*bushModel)
-            .setTransformation(makeRandomTransform(-4.0f, 4.0f, -1.0f, -4.0f, 1.0f, 0.4f, 0.6f));
-    }
-
-    scenes[2]->addDrawable(*sphereModel)
-        .setTransformation(makeStaticTransform(glm::vec3(2.0f, 1.8f, 0.5f), 0.2f))
-        .setColor(glm::vec3(1.0f, 1.0f, 0.0f));
-    scenes[2]->addDrawable(*loginModel)
-        .setTransformation(makeStaticTransform(glm::vec3(2.0f, -1.7f, 0.0f), 0.4f));
-
-    // Scéna 4 login
-    scenes.push_back(std::make_unique<Scene>());
-    scenes[3]->addDrawable(*loginModel)
-        .setTransformation(makeStaticTransform(glm::vec3(0.0f, 0.0f, 0.0f), 0.4f));
-    scenes[3]->addDrawable(*loginModel)
-        .setTransformation(makeStaticTransform(glm::vec3(2.0f, -1.7f, 0.0f), 0.4f));
-
-
-    // Scéna 5 — sluneční soustava
-    scenes.push_back(std::make_unique<Scene>());
-   
-    constexpr float earthOrbitSpeed = 20.0f;   // deg/sec around Sun
-    constexpr float earthOrbitRadius = 2.0f;
-    constexpr float earthSpinSpeed = 90.0f;    // deg/sec, own axis
-    constexpr float earthScale = 0.3f;
-
-    constexpr float moonOrbitSpeed = 80.0f;    // deg/sec around Earth
-    constexpr float moonOrbitRadius = 0.8f;
-    constexpr float moonSpinSpeed = 40.0f;
-    constexpr float moonScale = 0.1f;
-
-    // Sun — stays at origin, only spins on its own axis
-    auto sunComposite = std::make_unique<TransformationComposite>();
-    sunComposite->add(std::make_unique<DynamicRotateTransformation>(10.0f, glm::vec3(0.0f, 1.0f, 0.0f)));
-    sunComposite->add(std::make_unique<ScaleTransformation>(glm::vec3(1.0f)));
-    scenes[4]->addDrawable(*sunModel)
-        .setTransformation(std::move(sunComposite));
-
-    // Earth — orbits Sun, spins on its own axis
-    auto earthComposite = std::make_unique<TransformationComposite>();
-    addOrbit(*earthComposite, earthOrbitSpeed, earthOrbitRadius);
-    earthComposite->add(std::make_unique<DynamicRotateTransformation>(earthSpinSpeed, glm::vec3(0.0f, 1.0f, 0.0f)));
-    earthComposite->add(std::make_unique<ScaleTransformation>(glm::vec3(earthScale)));
-    scenes[4]->addDrawable(*earthModel)
-        .setTransformation(std::move(earthComposite));
-
-    // Moon — follows Earth's orbital path AROUND the Sun, then orbits Earth on top of that, then spins
-    auto moonComposite = std::make_unique<TransformationComposite>();
-    addOrbit(*moonComposite, earthOrbitSpeed, earthOrbitRadius);  // same params as Earth's orbit — keeps Moon traveling with Earth
-    addOrbit(*moonComposite, moonOrbitSpeed, moonOrbitRadius);    // Moon's own orbit around Earth
-    moonComposite->add(std::make_unique<DynamicRotateTransformation>(moonSpinSpeed, glm::vec3(0.0f, 1.0f, 0.0f)));
-    moonComposite->add(std::make_unique<ScaleTransformation>(glm::vec3(moonScale)));
-    scenes[4]->addDrawable(*moonModel)
-        .setTransformation(std::move(moonComposite));
-
-    scenes[4]->addDrawable(*loginModel)
-        .setTransformation(makeStaticTransform(glm::vec3(2.0f, -1.7f, 0.0f), 0.4f));
-
-
     // new
-    viewMatrix = glm::lookAt(
-        glm::vec3(0.0f, 0.0f, 5.0f),   // eye position
-        glm::vec3(0.0f, 0.0f, 0.0f),   // look-at target
-        glm::vec3(0.0f, 1.0f, 0.0f)    // up vector
-    );
+    camera = std::make_unique<Camera>(glm::vec3(0.0f, 0.0f, 5.0f), static_cast<float>(width) / static_cast<float>(height));
 
-    projectionMatrix = glm::perspective(
-        glm::radians(45.0f),
-        static_cast<float>(width) / static_cast<float>(height),
-        0.1f, 100.0f
-    );
+    basicShader = std::make_unique<ShaderProgram>("shaders/basic.vert", "shaders/basic.frag");
+    treeShader = std::make_unique<ShaderProgram>("shaders/tree.vert", "shaders/basic.frag");
+    basicShader->setCamera(camera.get());
+    treeShader->setCamera(camera.get());
+
+    scenes.push_back(SceneFactory::createTriangleScene(*basicShader, *triangleModel));
+    scenes.push_back(SceneFactory::createSphereScene(*basicShader, *sphereModel));
+    scenes.push_back(SceneFactory::createForestScene(*basicShader, *treeShader, *treeModel, *bushModel, *sphereModel));
+    scenes.push_back(SceneFactory::createLoginScene(*basicShader, *loginModel));
+    scenes.push_back(SceneFactory::createSolarSystemScene(*basicShader, *sunModel, *earthModel, *moonModel));
+
+
+
 }
 
 void Application::run() {
@@ -201,8 +122,26 @@ void Application::run() {
             currentSceneIndex = 4;
         }
 
+        if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
+			// MOVE FORWARD
+			camera->processKeyboard(Camera::Movement::FORWARD, deltaTime);
+        }
+        if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
+            // MOVE BACKWARD
+            camera->processKeyboard(Camera::Movement::BACKWARD, deltaTime);
+        }
+
+        if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
+            // MOVE LEFT
+            camera->processKeyboard(Camera::Movement::LEFT, deltaTime);
+        }
+        if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
+            // MOVE RIGHT
+            camera->processKeyboard(Camera::Movement::RIGHT, deltaTime);
+        }
+
         scenes[currentSceneIndex]->update(deltaTime);
-        scenes[currentSceneIndex]->draw(viewMatrix, projectionMatrix);
+        scenes[currentSceneIndex]->draw();
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
@@ -220,4 +159,29 @@ void Application::key_callback(GLFWwindow* window, int key, int, int action, int
 
 void Application::window_size_callback(GLFWwindow*, int width, int height) {
     glViewport(0, 0, width, height);
+
+	Application* app = static_cast<Application*>(glfwGetWindowUserPointer(glfwGetCurrentContext()));
+
+	if (app && app->camera && height > 0) {
+		app->camera->setAspectRatio(static_cast<float>(width) / static_cast<float>(height));
+	}
+}
+
+void Application::cursor_position_callback(GLFWwindow* window, double xpos, double ypos) {
+    Application* app = static_cast<Application*>(glfwGetWindowUserPointer(window));
+    if (!app || !app->camera) return;
+
+    if (app->firstMouse) {
+        app->lastMouseX = xpos;
+        app->lastMouseY = ypos;
+        app->firstMouse = false;
+    }
+
+    float xOffset = static_cast<float>(xpos - app->lastMouseX);
+    float yOffset = static_cast<float>(ypos - app->lastMouseY);
+
+    app->lastMouseX = xpos;
+    app->lastMouseY = ypos;
+
+    app->camera->processMouse(xOffset, yOffset);
 }

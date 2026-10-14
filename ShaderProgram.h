@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Shader.h"
+#include "IObserver.h"
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
 #include <glm/vec4.hpp>
@@ -9,7 +10,9 @@
 
 #include <glad/gl.h>
 
-class ShaderProgram {
+class Camera;
+
+class ShaderProgram : public IObserver {
 public:
     ShaderProgram(const char* vertexFile, const char* fragmentFile);
     ~ShaderProgram();
@@ -19,6 +22,9 @@ public:
 
     void use() const;
     GLuint getProgram() const { return programId; }
+
+	void setCamera(Camera* newCamera);
+	void onCameraChanged() override;
 
     // Přetížené sendUniform funkce
     void sendUniform(GLint location, float value) const;
@@ -32,4 +38,8 @@ private:
     Shader vertexShader;
     Shader fragmentShader;
     GLuint programId = 0;
+
+    Camera* camera = nullptr;
+    GLint viewMatrixLoc = -1;
+	GLint projectionMatrixLoc = -1;
 };
