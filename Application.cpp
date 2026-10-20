@@ -13,6 +13,8 @@
 #include "Models/earth.h"
 #include "Models/moon.h"
 #include "Models/sun.h"
+#include "Models/clock.h"
+#include "Models/ground.h"
 
 
 #include <glm/vec2.hpp>
@@ -58,7 +60,7 @@ void Application::initialization() {
 
 	glfwSetWindowUserPointer(window, this);
 	glfwSetCursorPosCallback(window, cursor_position_callback);
-	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
 
     if (!gladLoadGL((GLADloadfunc)glfwGetProcAddress)) {
         throw std::runtime_error("GLAD initialization failed");
@@ -77,17 +79,23 @@ void Application::initialization() {
     earthModel = std::make_unique<Model>(::earth, sizeof(::earth), true);
     moonModel = std::make_unique<Model>(::moon, sizeof(::moon), true);
 
+	groundModel = std::make_unique<Model>(::ground, sizeof(::ground));
+
+    clockModel = std::make_unique<Model>(::clockModel, sizeof(::clockModel), true, true);
+
     // new
     camera = std::make_unique<Camera>(glm::vec3(0.0f, 0.0f, 5.0f), static_cast<float>(width) / static_cast<float>(height));
 
     basicShader = std::make_unique<ShaderProgram>("shaders/basic.vert", "shaders/basic.frag");
     treeShader = std::make_unique<ShaderProgram>("shaders/tree.vert", "shaders/basic.frag");
+    clockShader = std::make_unique<ShaderProgram>("shaders/clock.vert", "shaders/clock.frag");
     basicShader->setCamera(camera.get());
     treeShader->setCamera(camera.get());
+    clockShader->setCamera(camera.get());
 
     scenes.push_back(SceneFactory::createTriangleScene(*basicShader, *triangleModel));
     scenes.push_back(SceneFactory::createSphereScene(*basicShader, *sphereModel));
-    scenes.push_back(SceneFactory::createForestScene(*basicShader, *treeShader, *treeModel, *bushModel, *sphereModel));
+    scenes.push_back(SceneFactory::createForestScene(*basicShader, *treeShader, *clockShader, *treeModel, *bushModel, *sphereModel, *clockModel, *groundModel));
     scenes.push_back(SceneFactory::createLoginScene(*basicShader, *loginModel));
     scenes.push_back(SceneFactory::createSolarSystemScene(*basicShader, *sunModel, *earthModel, *moonModel));
 
@@ -182,6 +190,8 @@ void Application::cursor_position_callback(GLFWwindow* window, double xpos, doub
 
     app->lastMouseX = xpos;
     app->lastMouseY = ypos;
-
-    app->camera->processMouse(xOffset, yOffset);
+	if (GLFW_PRESS == glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT)) {
+		app->camera->processMouse(xOffset, yOffset);
+	}
+   
 }

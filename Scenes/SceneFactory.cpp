@@ -24,14 +24,8 @@ std::unique_ptr<Scene> SceneFactory::createSphereScene(ShaderProgram& shader, Mo
     return scene;
 }
 
-std::unique_ptr<Scene> SceneFactory::createForestScene(ShaderProgram& basicShader, ShaderProgram& treeShader, Model& treeModel, Model& bushModel, Model& sphereModel) {
+std::unique_ptr<Scene> SceneFactory::createForestScene(ShaderProgram& basicShader, ShaderProgram& treeShader,ShaderProgram& clockShader, Model& treeModel, Model& bushModel, Model& sphereModel, Model& clockModel, Model& groundModel) {
     auto scene = std::make_unique<Scene>();
-
-    auto composite = std::make_unique<TransformationComposite>();
-    composite->add(std::make_unique<TranslateTransformation>(glm::vec3(8.0f, -8.0f, 0.5f)));
-    composite->add(std::make_unique<DynamicRotateTransformation>(50.0f, glm::vec3(0.0f, 1.0f, 0.0f)));
-    composite->add(std::make_unique<ScaleTransformation>(glm::vec3(0.1f)));
-    scene->addDrawable(treeModel, treeShader).setTransformation(std::move(composite));
 
     constexpr int treeCount = 74;
     for (int i = 0; i < treeCount; i++) {
@@ -44,6 +38,32 @@ std::unique_ptr<Scene> SceneFactory::createForestScene(ShaderProgram& basicShade
         scene->addDrawable(bushModel, basicShader)
             .setTransformation(makeRandomTransform(-5.0f, 5.0f, -1.0f, -4.0f, 1.0f, 0.4f, 0.6f)).setColor(glm::vec3(0.0f, 0.5f, 0.0f));
     }
+
+    auto clockComposite = std::make_unique<TransformationComposite>();
+    clockComposite->add(std::make_unique<TranslateTransformation>(glm::vec3(0.0f, -0.67f, -2.0f)));
+    clockComposite->add(std::make_unique<ScaleTransformation>(glm::vec3(0.2f, 0.2f, 0.2f)));
+	clockComposite->add(std::make_unique<RotateTransformation>(-90.0f,(glm::vec3(0.0f, 1.0f, 0.0f))));
+
+    scene->addDrawable(clockModel, clockShader)
+        .setTransformation(std::move(clockComposite))
+        .enableClockHands();
+
+    auto clockComposite2 = std::make_unique<TransformationComposite>();
+    clockComposite2->add(std::make_unique<TranslateTransformation>(glm::vec3(2.3f, -0.67f, -2.0f)));
+    clockComposite2->add(std::make_unique<ScaleTransformation>(glm::vec3(0.2f, 0.2f, 0.2f)));
+    clockComposite2->add(std::make_unique<RotateTransformation>(90.0f, (glm::vec3(0.0f, 1.0f, 0.0f))));
+
+
+
+    scene->addDrawable(clockModel, clockShader)
+        .setTransformation(std::move(clockComposite2))
+        .enableClockHands();
+
+
+    // ground plane
+
+    scene->addDrawable(groundModel, basicShader).setColor(glm::vec3(0.5f, 0.5f, 0.0f));
+
 
     scene->addDrawable(sphereModel, basicShader)
         .setTransformation(makeStaticTransform(glm::vec3(4.0f, 4.0f, 0.5f), 0.2f))

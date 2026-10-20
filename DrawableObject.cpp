@@ -1,6 +1,9 @@
 #include "DrawableObject.h"
 #include <iostream>
 
+#include <ctime>
+#include <glm/gtc/constants.hpp>
+
 #include "Model.h"
 #include "ShaderProgram.h"
 
@@ -28,11 +31,43 @@ DrawableObject& DrawableObject::setColor(const glm::vec3& c) {
 
 void DrawableObject::update(float deltaTime) {
     transformation->update(deltaTime);
+
+    if (isClock) {
+        std::time_t t = std::time(nullptr);
+        std::tm localTime;
+        localtime_s(&localTime, &t); // MSVC-safe; use localtime_r on non-Windows
+
+        float hours = static_cast<float>(localTime.tm_hour % 12);
+        float minutes = static_cast<float>(localTime.tm_min);
+        float seconds = static_cast<float>(localTime.tm_sec);
+
+        secondAngle = glm::radians(seconds * 6.0f);                          // 360/60
+        minuteAngle = glm::radians(minutes * 6.0f + seconds * 0.1f);         // + creep from seconds
+        hourAngle = glm::radians(hours * 30.0f + minutes * 0.5f);          // 360/12, + creep from minutes
+    }
 }
 
 void DrawableObject::draw() const {
     shaderProgram.use();
     shaderProgram.sendUniform(modelMatrixLoc, transformation->getMatrix());
     shaderProgram.sendUniform(colorLoc, color);
+    //shaderProgram.sendUniform(trunkVertexCountLoc, trunkVertexCount);
+
+
+    if (isClock) {
+        shaderProgram.sendUniform(hourAngleLoc, hourAngle);
+        shaderProgram.sendUniform(minuteAngleLoc, minuteAngle);
+        shaderProgram.sendUniform(secondAngleLoc, secondAngle);
+    }
+
     model.draw();
+}
+
+
+DrawableObject& DrawableObject::enableClockHands() {
+    isClock = true;
+    hourAngleLoc = glGetUniformLocation(shaderProgram.getProgram(), "uHourAngle");
+    minuteAngleLoc = glGetUniformLocation(shaderProgram.getProgram(), "uMinuteAngle");
+    secondAngleLoc = glGetUniformLocation(shaderProgram.getProgram(), "uSecondAngle");
+    return *this;
 }

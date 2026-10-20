@@ -14,12 +14,17 @@ public:
 
     DrawableObject& setTransformation(std::unique_ptr<ITransformation> transform);
     DrawableObject& setColor(const glm::vec3& c);
+    DrawableObject& enableClockHands();
 
 private:
     Model& model;
     ShaderProgram& shaderProgram;
     std::unique_ptr<ITransformation> transformation;
     glm::vec3 color;
+
+    bool isClock = false;
+    GLint hourAngleLoc = -1, minuteAngleLoc = -1, secondAngleLoc = -1;
+    float hourAngle = 0.0f, minuteAngle = 0.0f, secondAngle = 0.0f;
 
     GLint modelMatrixLoc;
     GLint colorLoc;

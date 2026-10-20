@@ -37,10 +37,13 @@ private:
     std::unique_ptr<Model> sphereModel;
 	std::unique_ptr<Model> triangleModel;
 	std::unique_ptr<Model> loginModel;
+    std::unique_ptr<Model> groundModel;
 
     std::unique_ptr<Model> sunModel;
     std::unique_ptr<Model> earthModel;
     std::unique_ptr<Model> moonModel;
+
+	std::unique_ptr<Model> clockModel;
 
     glm::mat4 viewMatrix;
     glm::mat4 projectionMatrix;
@@ -49,6 +52,7 @@ private:
 
     std::unique_ptr<ShaderProgram> basicShader;
     std::unique_ptr<ShaderProgram> treeShader;
+    std::unique_ptr<ShaderProgram> clockShader;
 
 
 

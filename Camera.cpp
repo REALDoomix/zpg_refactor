@@ -6,8 +6,8 @@
 
 Camera::Camera(const glm::vec3& eye, float aspectRatio)
     : eye(eye), up(0.0f, 1.0f, 0.0f),
-    alpha(glm::radians(90.0f)),  // start looking level (90° = equator on the sphere)
-    fi(glm::radians(-90.0f)),    // start looking toward -Z (matches your earlier "straight on" fix)
+    alpha(glm::radians(90.0f)),  // start looking level
+    fi(glm::radians(-90.0f)),    // start looking -Z 
     aspectRatio(aspectRatio) {
 }
 
