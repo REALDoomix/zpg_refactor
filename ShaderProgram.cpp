@@ -71,3 +71,11 @@ void ShaderProgram::sendUniform(GLint location, const glm::mat4& mat) const
 {
 	glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(mat));
 }
+
+void ShaderProgram::setLightPosition(const glm::vec3& position) {
+    if (lightPositionLoc == -1) {
+        lightPositionLoc = glGetUniformLocation(programId, "lightPosition");
+    }
+    use();
+    sendUniform(lightPositionLoc, position);
+}

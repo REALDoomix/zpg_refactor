@@ -31,7 +31,7 @@ private:
     double lastMouseY = 0.0;
     bool firstMouse = true;
 
-    // Modely
+    #pragma region Modely
     std::unique_ptr<Model> bushModel;
     std::unique_ptr<Model> treeModel;
     std::unique_ptr<Model> sphereModel;
@@ -45,15 +45,19 @@ private:
 
 	std::unique_ptr<Model> clockModel;
 
+    #pragma endregion
+
     glm::mat4 viewMatrix;
     glm::mat4 projectionMatrix;
 
 	std::unique_ptr<Camera> camera;
 
+    #pragma region Shadery
     std::unique_ptr<ShaderProgram> basicShader;
     std::unique_ptr<ShaderProgram> treeShader;
     std::unique_ptr<ShaderProgram> clockShader;
-
+	std::unique_ptr<ShaderProgram> phongShader;
+    #pragma endregion
 
 
     int width = 800;
