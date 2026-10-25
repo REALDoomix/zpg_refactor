@@ -1,8 +1,10 @@
 #include "SceneFactory.h"
 #include "../Transformations.h"
 
-std::unique_ptr<Scene> SceneFactory::createTriangleScene(ShaderProgram& shader, Model& triangleModel) {
+std::unique_ptr<Scene> SceneFactory::createTriangleScene(ShaderManager& shaderManager, ModelManager& models) {
     auto scene = std::make_unique<Scene>();
+    Model& triangleModel = models.get("triangle");
+	ShaderProgram& shader = shaderManager.get("basic");
 
     auto compositeA = std::make_unique<TransformationComposite>();
     compositeA->add(std::make_unique<TranslateTransformation>(glm::vec3(-1.5f, 0.0f, 0.0f)));
@@ -17,14 +19,29 @@ std::unique_ptr<Scene> SceneFactory::createTriangleScene(ShaderProgram& shader, 
     return scene;
 }
 
-std::unique_ptr<Scene> SceneFactory::createSphereScene(ShaderProgram& shader, Model& sphereModel) {
+std::unique_ptr<Scene> SceneFactory::createSphereScene(ShaderManager& shaderManager, ModelManager& models) {
+    Model& sphereModel = models.get("sphere");
+
+	ShaderProgram& shader = shaderManager.get("basic");
+
     auto scene = std::make_unique<Scene>();
     scene->addDrawable(sphereModel,shader)
         .setTransformation(makeStaticTransform(glm::vec3(-0.5f, 0.5f, 0.0f), 0.1f));
     return scene;
 }
 
-std::unique_ptr<Scene> SceneFactory::createForestScene(ShaderProgram& basicShader, ShaderProgram& treeShader,ShaderProgram& clockShader, Model& treeModel, Model& bushModel, Model& sphereModel, Model& clockModel, Model& groundModel) {
+std::unique_ptr<Scene> SceneFactory::createForestScene(ShaderManager& shaderManager, ModelManager& models) {
+    Model& treeModel = models.get("tree");
+    Model& bushModel = models.get("bush");
+    Model& sphereModel = models.get("sphere");
+    Model& clockModel = models.get("clock");
+    Model& groundModel = models.get("ground");
+
+
+	ShaderProgram& basicShader = shaderManager.get("basic");
+	ShaderProgram& treeShader = shaderManager.get("tree");
+	ShaderProgram& clockShader = shaderManager.get("clock");
+
     auto scene = std::make_unique<Scene>();
 
     constexpr int treeCount = 74;
@@ -72,14 +89,28 @@ std::unique_ptr<Scene> SceneFactory::createForestScene(ShaderProgram& basicShade
     return scene;
 }
 
-std::unique_ptr<Scene> SceneFactory::createLoginScene(ShaderProgram& shader, Model& loginModel) {
+std::unique_ptr<Scene> SceneFactory::createLoginScene(ShaderManager& shaderManager, ModelManager& models) {
+    Model& loginModel = models.get("login");
+
+	ShaderProgram& shader = shaderManager.get("basic");
+
     auto scene = std::make_unique<Scene>();
-    scene->addDrawable(loginModel,shader)
+    scene->addDrawable(loginModel,shaderManager.get("basic"))
         .setTransformation(makeStaticTransform(glm::vec3(0.0f, 0.0f, 0.0f), 0.4f));
     return scene;
 }
 
-std::unique_ptr<Scene> SceneFactory::createSolarSystemScene(ShaderProgram& shader, ShaderProgram& lightShader, Model& sunModel, Model& earthModel, Model& moonModel) {
+std::unique_ptr<Scene> SceneFactory::createSolarSystemScene(ShaderManager& shaderManager, ModelManager& models) {
+    Model& sunModel = models.get("sun");
+    Model& earthModel = models.get("earth");
+    Model& moonModel = models.get("moon");
+    Model& astronautModel = models.get("astronaut");
+
+
+	ShaderProgram& shader = shaderManager.get("basic");
+	ShaderProgram& lightShader = shaderManager.get("lambert");
+
+
     auto scene = std::make_unique<Scene>();
 
 	lightShader.setLightPosition(glm::vec3(0.0f, 0.0f, 0.0f));
@@ -105,22 +136,40 @@ std::unique_ptr<Scene> SceneFactory::createSolarSystemScene(ShaderProgram& shade
     moonComposite->add(std::make_unique<ScaleTransformation>(glm::vec3(moonScale)));
     scene->addDrawable(moonModel,lightShader).setTransformation(std::move(moonComposite));
 
+    constexpr float astronautOrbitSpeed = 50.0f, astronautOrbitRadius = 3.0f, astronautSpinSpeed = 120.0f, astronautScale = 0.09f;
+    auto astronautComposite = std::make_unique<TransformationComposite>();
+    addOrbit(*astronautComposite, earthOrbitSpeed, -earthOrbitRadius);
+    astronautComposite->add(std::make_unique<DynamicRotateTransformation>(astronautSpinSpeed, glm::vec3(0.0f, -1.0f, 0.0f)));
+    astronautComposite->add(std::make_unique<ScaleTransformation>(glm::vec3(astronautScale)));
+    astronautComposite->add(std::make_unique<TranslateTransformation>(glm::vec3(0.0f, 0.0f, -3.1f)));
+    astronautComposite->add(std::make_unique<RotateTransformation>(-90.0f,glm::vec3(1.0f, 0.0f, 0.0f)));
+    scene->addDrawable(astronautModel, lightShader).setTransformation(std::move(astronautComposite));
+
     return scene;
 }
 
-std::unique_ptr<Scene> SceneFactory::createLightScene(ShaderProgram& shader, Model& sphereModel)
+std::unique_ptr<Scene> SceneFactory::createLightScene(ShaderManager& shaderManager, ModelManager& models)
 {
     auto scene = std::make_unique<Scene>();
+    Model& sphereModel = models.get("sphere");
 
-    shader.setLightPosition(glm::vec3(0.0f, 0.0f, 0.0f));
+	ShaderProgram& ambient = shaderManager.get("ambient");
+	ShaderProgram& Lambert = shaderManager.get("lambert");
+	ShaderProgram& Phong = shaderManager.get("phong");
+	ShaderProgram& bPhong = shaderManager.get("blinn");
 
-    scene->addDrawable(sphereModel, shader)
+    ambient.setLightPosition(glm::vec3(0.0f, 0.0f, 0.0f));
+    Lambert.setLightPosition(glm::vec3(0.0f, 0.0f, 0.0f));
+    Phong.setLightPosition(glm::vec3(0.0f, 0.0f, 0.0f));
+    bPhong.setLightPosition(glm::vec3(0.0f, 0.0f, 0.0f));
+
+    scene->addDrawable(sphereModel, ambient)
         .setTransformation(makeStaticTransform(glm::vec3(0.0f, 0.5f, 0.0f), 0.1f)).setColor(glm::vec3(1.0f, 0.0f, 0.0f));
-    scene->addDrawable(sphereModel, shader)
+    scene->addDrawable(sphereModel, Phong)
         .setTransformation(makeStaticTransform(glm::vec3(0.0f, -0.5f, 0.0f), 0.1f)).setColor(glm::vec3(1.0f, 0.0f, 0.0f));
-    scene->addDrawable(sphereModel, shader)
+    scene->addDrawable(sphereModel, bPhong)
         .setTransformation(makeStaticTransform(glm::vec3(0.5f, 0.0f, 0.0f), 0.1f)).setColor(glm::vec3(1.0f, 0.0f, 0.0f));
-    scene->addDrawable(sphereModel, shader)
+    scene->addDrawable(sphereModel, Lambert)
         .setTransformation(makeStaticTransform(glm::vec3(-0.5f, 0.0f, 0.0f), 0.1f)).setColor(glm::vec3(1.0f, 0.0f, 0.0f));
     return scene;
 

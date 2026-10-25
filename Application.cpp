@@ -12,6 +12,7 @@
 #include "Models/triangle.h"
 #include "Models/earth.h"
 #include "Models/moon.h"
+#include "Models/astronaut.h"
 #include "Models/sun.h"
 #include "Models/clock.h"
 #include "Models/ground.h"
@@ -68,52 +69,42 @@ void Application::initialization() {
 
     glEnable(GL_DEPTH_TEST);
 
-    // Modely
-    bushModel = std::make_unique<Model>(::bushes, sizeof(::bushes));
-    treeModel = std::make_unique<Model>(::tree, sizeof(::tree));
-	sphereModel = std::make_unique<Model>(::sphere, sizeof(::sphere));
-	triangleModel = std::make_unique<Model>(::triangle, sizeof(::triangle));
-	loginModel = std::make_unique<Model>(::login, sizeof(::login));
+    modelManager.load("bush", ::bushes, sizeof(::bushes));
+    modelManager.load("tree", ::tree, sizeof(::tree));
+    modelManager.load("sphere", ::sphere, sizeof(::sphere));
+    modelManager.load("triangle", ::triangle, sizeof(::triangle));
+    modelManager.load("login", ::login, sizeof(::login));
+    modelManager.load("ground", ::ground, sizeof(::ground));
 
-    sunModel = std::make_unique<Model>(::sun, sizeof(::sun), true);
-    earthModel = std::make_unique<Model>(::earth, sizeof(::earth), true);
-    moonModel = std::make_unique<Model>(::moon, sizeof(::moon), true);
+    modelManager.load("sun", ::sun, sizeof(::sun), true);
+    modelManager.load("earth", ::earth, sizeof(::earth), true);
+    modelManager.load("moon", ::moon, sizeof(::moon), true);
+    modelManager.load("astronaut", ::astronaut, sizeof(::astronaut), true);
 
-	groundModel = std::make_unique<Model>(::ground, sizeof(::ground));
+    modelManager.load("clock", ::clockModel, sizeof(::clockModel), true, true);
 
-    clockModel = std::make_unique<Model>(::clockModel, sizeof(::clockModel), true, true);
 
     // new
-    camera = std::make_unique<Camera>(glm::vec3(0.0f, 0.0f, 0.0f), static_cast<float>(width) / static_cast<float>(height));
+    camera = std::make_unique<Camera>(glm::vec3(0.0f, 0.0f, 4.0f), static_cast<float>(width) / static_cast<float>(height));
 
-    basicShader = std::make_unique<ShaderProgram>("shaders/basic.vert", "shaders/basic.frag");
-    treeShader = std::make_unique<ShaderProgram>("shaders/tree.vert", "shaders/basic.frag");
-    clockShader = std::make_unique<ShaderProgram>("shaders/clock.vert", "shaders/clock.frag");
-    ambientShader = std::make_unique<ShaderProgram>("shaders/phong.vert", "shaders/ambient.frag");
-    lambertShader = std::make_unique<ShaderProgram>("shaders/phong.vert", "shaders/lambert.frag");
-    phongShader = std::make_unique<ShaderProgram>("shaders/phong.vert", "shaders/phong.frag");
-    blinnShader = std::make_unique<ShaderProgram>("shaders/phong.vert", "shaders/bphong.frag");
+    shaderManager.load("basic", "shaders/basic.vert", "shaders/basic.frag");
+    shaderManager.load("tree", "shaders/tree.vert", "shaders/basic.frag");
+    shaderManager.load("clock", "shaders/clock.vert", "shaders/clock.frag");
+    shaderManager.load("ambient", "shaders/phong.vert", "shaders/ambient.frag");
+    shaderManager.load("lambert", "shaders/phong.vert", "shaders/lambert.frag");
+    shaderManager.load("phong", "shaders/phong.vert", "shaders/phong.frag");
+    shaderManager.load("blinn", "shaders/phong.vert", "shaders/bphong.frag");
 
+    shaderManager.setCamera(camera.get());
 
-    basicShader->setCamera(camera.get());
-    treeShader->setCamera(camera.get());
-    clockShader->setCamera(camera.get());
-    phongShader->setCamera(camera.get());
-    lambertShader->setCamera(camera.get());
-    blinnShader->setCamera(camera.get());
-	ambientShader->setCamera(camera.get());
+    
 
-
-	//phongShader->setLightPosition(glm::vec3(0.0f, 0.0f, 0.0f));
-
-    scenes.push_back(SceneFactory::createTriangleScene(*basicShader, *triangleModel));
-    scenes.push_back(SceneFactory::createSphereScene(*basicShader, *sphereModel));
-    scenes.push_back(SceneFactory::createForestScene(*basicShader, *treeShader, *clockShader, *treeModel, *bushModel, *sphereModel, *clockModel, *groundModel));
-    scenes.push_back(SceneFactory::createLoginScene(*basicShader, *loginModel));
-    scenes.push_back(SceneFactory::createSolarSystemScene(*basicShader,*phongShader, *sunModel, *earthModel, *moonModel));
-	scenes.push_back(SceneFactory::createLightScene(*blinnShader, *sphereModel));
-
-
+    scenes.push_back(SceneFactory::createTriangleScene(shaderManager, modelManager));
+    scenes.push_back(SceneFactory::createSphereScene(shaderManager, modelManager));
+    scenes.push_back(SceneFactory::createForestScene(shaderManager, modelManager));
+    scenes.push_back(SceneFactory::createLoginScene(shaderManager, modelManager));
+    scenes.push_back(SceneFactory::createSolarSystemScene(shaderManager, modelManager));
+    scenes.push_back(SceneFactory::createLightScene(shaderManager, modelManager));
 
 }
 
@@ -126,26 +117,6 @@ void Application::run() {
         float currentTime = static_cast<float>(glfwGetTime());
         float deltaTime = currentTime - lastTime;
         lastTime = currentTime;
-
-        // Přepínání scén
-        if (glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS) {
-            currentSceneIndex = 0;
-        }
-        if (glfwGetKey(window, GLFW_KEY_2) == GLFW_PRESS) {
-            currentSceneIndex = 1;
-        }
-        if (glfwGetKey(window, GLFW_KEY_3) == GLFW_PRESS) {
-            currentSceneIndex = 2;
-        }
-        if (glfwGetKey(window, GLFW_KEY_4) == GLFW_PRESS) {
-            currentSceneIndex = 3;
-        }
-        if (glfwGetKey(window, GLFW_KEY_5) == GLFW_PRESS) {
-            currentSceneIndex = 4;
-        }
-		if (glfwGetKey(window, GLFW_KEY_6) == GLFW_PRESS) {
-			currentSceneIndex = 5;
-		}
 
         if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
 			// MOVE FORWARD
@@ -177,8 +148,17 @@ void Application::error_callback(int error, const char* description) {
 }
 
 void Application::key_callback(GLFWwindow* window, int key, int, int action, int) {
+    Application* app = static_cast<Application*>(glfwGetWindowUserPointer(window));
     if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
         glfwSetWindowShouldClose(window, GLFW_TRUE);
+    }
+    if (action == GLFW_PRESS) {
+        if (key == GLFW_KEY_1) app->currentSceneIndex = 0;
+        if (key == GLFW_KEY_2) app->currentSceneIndex = 1;
+        if (key == GLFW_KEY_3) app->currentSceneIndex = 2;
+        if (key == GLFW_KEY_4) app->currentSceneIndex = 3;
+        if (key == GLFW_KEY_5) app->currentSceneIndex = 4;
+        if (key == GLFW_KEY_6) app->currentSceneIndex = 5;
     }
 }
 
