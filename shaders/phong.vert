@@ -15,6 +15,6 @@ out vec3 fragColor;
 void main(void){
     gl_Position = (projectionMatrix * viewMatrix * modelMatrix) * vec4(vp,1.0f);
     worldPosition = modelMatrix * vec4(vp,1.0f);
-    worldNormal = vn; //next lesson
+    worldNormal = vp;
     fragColor = vcol;
 }

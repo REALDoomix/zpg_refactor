@@ -14,9 +14,11 @@ DrawableObject::DrawableObject(Model& model, ShaderProgram& shaderProgram)
 
     modelMatrixLoc = glGetUniformLocation(shaderProgram.getProgram(), "modelMatrix");
     colorLoc = glGetUniformLocation(shaderProgram.getProgram(), "objectColor");
+    //normalMatrixLoc = glGetUniformLocation(shaderProgram.getProgram(), "normalMatrix");
 
     if (modelMatrixLoc == -1) std::cerr << "Warning: uniform 'modelMatrix' not found" << std::endl;
     if (colorLoc == -1) std::cerr << "Warning: uniform 'objectColor' not found" << std::endl;
+    //if (normalMatrixLoc == -1) std::cerr << "Warning: uniform 'normalMatrix' not found" << std::endl;
 }
 
 DrawableObject& DrawableObject::setTransformation(std::unique_ptr<ITransformation> transform) {
@@ -49,10 +51,12 @@ void DrawableObject::update(float deltaTime) {
 
 void DrawableObject::draw() const {
     shaderProgram.use();
-    shaderProgram.sendUniform(modelMatrixLoc, transformation->getMatrix());
-    shaderProgram.sendUniform(colorLoc, color);
-    //shaderProgram.sendUniform(trunkVertexCountLoc, trunkVertexCount);
 
+    glm::mat4 modelMatrix = transformation->getMatrix();
+    shaderProgram.sendUniform(modelMatrixLoc, modelMatrix);
+
+
+    shaderProgram.sendUniform(colorLoc, color);
 
     if (isClock) {
         shaderProgram.sendUniform(hourAngleLoc, hourAngle);

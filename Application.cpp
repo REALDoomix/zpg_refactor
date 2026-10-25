@@ -84,7 +84,7 @@ void Application::initialization() {
     clockModel = std::make_unique<Model>(::clockModel, sizeof(::clockModel), true, true);
 
     // new
-    camera = std::make_unique<Camera>(glm::vec3(0.0f, 0.0f, 5.0f), static_cast<float>(width) / static_cast<float>(height));
+    camera = std::make_unique<Camera>(glm::vec3(0.0f, 0.0f, 0.0f), static_cast<float>(width) / static_cast<float>(height));
 
     basicShader = std::make_unique<ShaderProgram>("shaders/basic.vert", "shaders/basic.frag");
     treeShader = std::make_unique<ShaderProgram>("shaders/tree.vert", "shaders/basic.frag");
@@ -98,13 +98,14 @@ void Application::initialization() {
     phongShader->setCamera(camera.get());
 
 
-	phongShader->setLightPosition(glm::vec3(0.0f, 0.0f, 0.0f));
+	//phongShader->setLightPosition(glm::vec3(0.0f, 0.0f, 0.0f));
 
     scenes.push_back(SceneFactory::createTriangleScene(*basicShader, *triangleModel));
     scenes.push_back(SceneFactory::createSphereScene(*basicShader, *sphereModel));
     scenes.push_back(SceneFactory::createForestScene(*basicShader, *treeShader, *clockShader, *treeModel, *bushModel, *sphereModel, *clockModel, *groundModel));
     scenes.push_back(SceneFactory::createLoginScene(*basicShader, *loginModel));
-    scenes.push_back(SceneFactory::createSolarSystemScene(*phongShader, *sunModel, *earthModel, *moonModel));
+    scenes.push_back(SceneFactory::createSolarSystemScene(*basicShader,*phongShader, *sunModel, *earthModel, *moonModel));
+	scenes.push_back(SceneFactory::createLightScene(*phongShader, *sphereModel));
 
 
 
@@ -136,6 +137,9 @@ void Application::run() {
         if (glfwGetKey(window, GLFW_KEY_5) == GLFW_PRESS) {
             currentSceneIndex = 4;
         }
+		if (glfwGetKey(window, GLFW_KEY_6) == GLFW_PRESS) {
+			currentSceneIndex = 5;
+		}
 
         if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
 			// MOVE FORWARD

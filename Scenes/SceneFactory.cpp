@@ -79,8 +79,10 @@ std::unique_ptr<Scene> SceneFactory::createLoginScene(ShaderProgram& shader, Mod
     return scene;
 }
 
-std::unique_ptr<Scene> SceneFactory::createSolarSystemScene(ShaderProgram& shader, Model& sunModel, Model& earthModel, Model& moonModel) {
+std::unique_ptr<Scene> SceneFactory::createSolarSystemScene(ShaderProgram& shader, ShaderProgram& lightShader, Model& sunModel, Model& earthModel, Model& moonModel) {
     auto scene = std::make_unique<Scene>();
+
+	lightShader.setLightPosition(glm::vec3(0.0f, 0.0f, 0.0f));
 
     constexpr float earthOrbitSpeed = 20.0f, earthOrbitRadius = 4.0f, earthSpinSpeed = 90.0f, earthScale = 0.3f;
     constexpr float moonOrbitSpeed = 80.0f, moonOrbitRadius = 0.8f, moonSpinSpeed = 40.0f, moonScale = 0.1f;
@@ -94,14 +96,32 @@ std::unique_ptr<Scene> SceneFactory::createSolarSystemScene(ShaderProgram& shade
     addOrbit(*earthComposite, earthOrbitSpeed, earthOrbitRadius);
     earthComposite->add(std::make_unique<DynamicRotateTransformation>(earthSpinSpeed, glm::vec3(0.0f, 1.0f, 0.0f)));
     earthComposite->add(std::make_unique<ScaleTransformation>(glm::vec3(earthScale)));
-    scene->addDrawable(earthModel,shader).setTransformation(std::move(earthComposite));
+    scene->addDrawable(earthModel,lightShader).setTransformation(std::move(earthComposite));
 
     auto moonComposite = std::make_unique<TransformationComposite>();
     addOrbit(*moonComposite, earthOrbitSpeed, earthOrbitRadius);
     addOrbit(*moonComposite, moonOrbitSpeed, moonOrbitRadius);
     moonComposite->add(std::make_unique<DynamicRotateTransformation>(moonSpinSpeed, glm::vec3(0.0f, 1.0f, 0.0f)));
     moonComposite->add(std::make_unique<ScaleTransformation>(glm::vec3(moonScale)));
-    scene->addDrawable(moonModel,shader).setTransformation(std::move(moonComposite));
+    scene->addDrawable(moonModel,lightShader).setTransformation(std::move(moonComposite));
 
     return scene;
+}
+
+std::unique_ptr<Scene> SceneFactory::createLightScene(ShaderProgram& shader, Model& sphereModel)
+{
+    auto scene = std::make_unique<Scene>();
+
+    shader.setLightPosition(glm::vec3(0.0f, 0.0f, 0.0f));
+
+    scene->addDrawable(sphereModel, shader)
+        .setTransformation(makeStaticTransform(glm::vec3(0.0f, 0.5f, 0.0f), 0.1f)).setColor(glm::vec3(1.0f, 0.0f, 0.0f));
+    scene->addDrawable(sphereModel, shader)
+        .setTransformation(makeStaticTransform(glm::vec3(0.0f, -0.5f, 0.0f), 0.1f)).setColor(glm::vec3(1.0f, 0.0f, 0.0f));
+    scene->addDrawable(sphereModel, shader)
+        .setTransformation(makeStaticTransform(glm::vec3(0.5f, 0.0f, 0.0f), 0.1f)).setColor(glm::vec3(1.0f, 0.0f, 0.0f));
+    scene->addDrawable(sphereModel, shader)
+        .setTransformation(makeStaticTransform(glm::vec3(-0.5f, 0.0f, 0.0f), 0.1f)).setColor(glm::vec3(1.0f, 0.0f, 0.0f));
+    return scene;
+
 }

@@ -28,4 +28,5 @@ private:
 
     GLint modelMatrixLoc;
     GLint colorLoc;
+    //GLint normalMatrixLoc;
 };

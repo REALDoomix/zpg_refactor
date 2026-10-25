@@ -31,6 +31,7 @@ public:
     void sendUniform(GLint location, int value) const;
     void sendUniform(GLint location, const glm::vec2& vec) const;
     void sendUniform(GLint location, const glm::vec3& vec) const;
+    void sendUniform(GLint location, const glm::mat3& mat) const;
     void sendUniform(GLint location, const glm::vec4& vec) const;
 	void sendUniform(GLint location, const glm::mat4& mat) const;
 	void setLightPosition(const glm::vec3& position);
