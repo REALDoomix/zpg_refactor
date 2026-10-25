@@ -89,13 +89,19 @@ void Application::initialization() {
     basicShader = std::make_unique<ShaderProgram>("shaders/basic.vert", "shaders/basic.frag");
     treeShader = std::make_unique<ShaderProgram>("shaders/tree.vert", "shaders/basic.frag");
     clockShader = std::make_unique<ShaderProgram>("shaders/clock.vert", "shaders/clock.frag");
-	phongShader = std::make_unique<ShaderProgram>("shaders/phong.vert", "shaders/phong.frag");
+    ambientShader = std::make_unique<ShaderProgram>("shaders/phong.vert", "shaders/ambient.frag");
+    lambertShader = std::make_unique<ShaderProgram>("shaders/phong.vert", "shaders/lambert.frag");
+    phongShader = std::make_unique<ShaderProgram>("shaders/phong.vert", "shaders/phong.frag");
+    blinnShader = std::make_unique<ShaderProgram>("shaders/phong.vert", "shaders/bphong.frag");
 
 
     basicShader->setCamera(camera.get());
     treeShader->setCamera(camera.get());
     clockShader->setCamera(camera.get());
     phongShader->setCamera(camera.get());
+    lambertShader->setCamera(camera.get());
+    blinnShader->setCamera(camera.get());
+	ambientShader->setCamera(camera.get());
 
 
 	//phongShader->setLightPosition(glm::vec3(0.0f, 0.0f, 0.0f));
@@ -105,7 +111,7 @@ void Application::initialization() {
     scenes.push_back(SceneFactory::createForestScene(*basicShader, *treeShader, *clockShader, *treeModel, *bushModel, *sphereModel, *clockModel, *groundModel));
     scenes.push_back(SceneFactory::createLoginScene(*basicShader, *loginModel));
     scenes.push_back(SceneFactory::createSolarSystemScene(*basicShader,*phongShader, *sunModel, *earthModel, *moonModel));
-	scenes.push_back(SceneFactory::createLightScene(*phongShader, *sphereModel));
+	scenes.push_back(SceneFactory::createLightScene(*blinnShader, *sphereModel));
 
 
 

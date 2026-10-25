@@ -56,7 +56,7 @@ private:
     std::unique_ptr<ShaderProgram> basicShader;
     std::unique_ptr<ShaderProgram> treeShader;
     std::unique_ptr<ShaderProgram> clockShader;
-	std::unique_ptr<ShaderProgram> phongShader;
+    std::unique_ptr<ShaderProgram> ambientShader, lambertShader, phongShader, blinnShader;
     #pragma endregion
 
 

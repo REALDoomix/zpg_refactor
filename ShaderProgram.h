@@ -45,4 +45,5 @@ private:
     GLint viewMatrixLoc = -1;
 	GLint projectionMatrixLoc = -1;
 	GLint lightPositionLoc = -1;
+	GLint viewPositionLoc = -1;
 };

@@ -19,6 +19,7 @@ public:
 
     glm::mat4 getViewMatrix() const;
     glm::mat4 getProjectionMatrix() const;
+	glm::vec3 getPos() const { return eye; }
 
     void setAspectRatio(float aspectRatio);
 

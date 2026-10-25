@@ -44,6 +44,13 @@ void ShaderProgram::onCameraChanged() {
     use();
     sendUniform(viewMatrixLoc, camera->getViewMatrix());
     sendUniform(projectionMatrixLoc, camera->getProjectionMatrix());
+
+    if (viewPositionLoc == -1) {
+        viewPositionLoc = glGetUniformLocation(programId, "viewPosition");
+    }
+    if (viewPositionLoc != -1) {
+        sendUniform(viewPositionLoc, camera->getPos());
+    }
 }
 
 // pro posilani napr angle do uniform promenne

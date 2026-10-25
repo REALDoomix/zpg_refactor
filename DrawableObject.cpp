@@ -14,11 +14,11 @@ DrawableObject::DrawableObject(Model& model, ShaderProgram& shaderProgram)
 
     modelMatrixLoc = glGetUniformLocation(shaderProgram.getProgram(), "modelMatrix");
     colorLoc = glGetUniformLocation(shaderProgram.getProgram(), "objectColor");
-    //normalMatrixLoc = glGetUniformLocation(shaderProgram.getProgram(), "normalMatrix");
+    normalMatrixLoc = glGetUniformLocation(shaderProgram.getProgram(), "normalMatrix");
 
     if (modelMatrixLoc == -1) std::cerr << "Warning: uniform 'modelMatrix' not found" << std::endl;
     if (colorLoc == -1) std::cerr << "Warning: uniform 'objectColor' not found" << std::endl;
-    //if (normalMatrixLoc == -1) std::cerr << "Warning: uniform 'normalMatrix' not found" << std::endl;
+    if (normalMatrixLoc == -1) std::cerr << "Warning: uniform 'normalMatrix' not found" << std::endl;
 }
 
 DrawableObject& DrawableObject::setTransformation(std::unique_ptr<ITransformation> transform) {
@@ -54,6 +54,11 @@ void DrawableObject::draw() const {
 
     glm::mat4 modelMatrix = transformation->getMatrix();
     shaderProgram.sendUniform(modelMatrixLoc, modelMatrix);
+
+    if (normalMatrixLoc != -1) {
+        glm::mat3 normalMatrix = glm::transpose(glm::inverse(glm::mat3(modelMatrix)));
+        shaderProgram.sendUniform(normalMatrixLoc, normalMatrix);
+    }
 
 
     shaderProgram.sendUniform(colorLoc, color);
