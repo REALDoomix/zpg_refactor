@@ -9,6 +9,7 @@
 #include <glad/gl.h>
 #include <vector>
 #include <memory>
+#include <string>
 
 class Camera;
 class Light;
@@ -38,6 +39,7 @@ public:
     void setLightPosition(const glm::vec3& position);
 
     void sendLights(const std::vector<std::shared_ptr<Light>>& lights) const;
+    void bindUniformBlock(const std::string& blockName, GLuint bindingPoint) const;
 
 private:
     Shader vertexShader;

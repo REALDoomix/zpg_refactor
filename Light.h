@@ -5,7 +5,8 @@
 
 enum class LightType {
     POINT = 0,
-    DIRECTIONAL = 1
+    DIRECTIONAL = 1,
+    SPOTLIGHT = 2
 };
 
 class Light {
@@ -14,10 +15,16 @@ public:
     glm::vec3 color{ 1.0f, 1.0f, 1.0f };
     glm::vec3 direction{ 0.0f, -1.0f, 0.0f };
 
-    // Útlum pro bodová světla
+    // Útlum pro bodová světla a reflektory
     float constant = 1.0f;
     float linear = 0.09f;
     float quadratic = 0.032f;
+
+    // Reflektor: kosinus mezního úhlu (default 0.99 odpovídá cca 8.1 stupňům)
+    float spotCutoff = 0.99f;
+
+    // Stav zapnuto / vypnuto
+    bool enabled = true;
 
     // Statické světlo (pozice, barva)
     Light(const glm::vec3& staticPos = glm::vec3(0.0f), const glm::vec3& col = glm::vec3(1.0f));

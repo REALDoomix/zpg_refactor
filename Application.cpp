@@ -151,6 +151,16 @@ void Application::initialization() {
 
     shaderManager.setCamera(camera.get());
 
+    // Inicializace reflektoru (baterky svázané s kamerou)
+    flashlight = std::make_shared<Light>();
+    flashlight->type = LightType::SPOTLIGHT;
+    flashlight->color = glm::vec3(1.0f, 0.98f, 0.90f);
+    flashlight->constant = 1.0f;
+    flashlight->linear = 0.08f;
+    flashlight->quadratic = 0.025f;
+    flashlight->spotCutoff = 0.985f; // mezní úhel kuželu reflektoru (cca 10 stupňů)
+    flashlight->enabled = flashlightEnabled;
+
     scenes.push_back(SceneFactory::createTriangleScene(shaderManager, modelManager));          // 1
     scenes.push_back(SceneFactory::createSphereScene(shaderManager, modelManager));            // 2 (Více světel + dynamické světlo)
     scenes.push_back(SceneFactory::createForestScene(shaderManager, modelManager));            // 3 (Denní les)
@@ -159,7 +169,7 @@ void Application::initialization() {
     scenes.push_back(SceneFactory::createLightScene(shaderManager, modelManager));             // 6 (4 koule - Ambient, Lambert, Phong, Blinn)
     scenes.push_back(SceneFactory::createNormalDemoScene(shaderManager, modelManager));        // 7 (Demonstrace chybného vs správného převodu normál)
     scenes.push_back(SceneFactory::createSpecularBleedDemoScene(shaderManager, modelManager)); // 8 (Demonstrace přesvitu na odvrácené straně s mocninou 1 vs ořezání)
-    scenes.push_back(SceneFactory::createNightForestScene(shaderManager, modelManager));       // 9 (Noční les s létající světluškou a útlumem světla)
+    scenes.push_back(SceneFactory::createNightForestScene(shaderManager, modelManager, flashlight)); // 9 (Noční les se světluškami a baterkou)
     scenes.push_back(SceneFactory::createTextureDemoScene(shaderManager, modelManager, textureManager));  // 0 (Jedna textura na plain)
     scenes.push_back(SceneFactory::createMultiTextureScene(shaderManager, modelManager, textureManager)); // T (Více textur na jednom modelu)
     scenes.push_back(SceneFactory::createShrekScene(shaderManager, modelManager, textureManager));        // Y (Shrek a toaleta s texturami a osvětlením)
@@ -176,12 +186,13 @@ void Application::initialization() {
     std::cout << " 6: 4 modely osvetleni\n";
     std::cout << " 7: Demonstrace prevodu normal (chybny vlevo vs spravny vpravo)\n";
     std::cout << " 8: Presvit zrcadlove slozky (chybny vlevo vs orezany vpravo)\n";
-    std::cout << " 9: Nocni les se svetluskou (point light s utlumem)\n";
+    std::cout << " 9: Nocni les (bodova svetla - svetlusky s nahodnym pohybem + baterka)\n";
     std::cout << " 0: Jedna textura (Plain s texturou dreveneho plotu)\n";
     std::cout << " T: Vice textur na jednom modelu (Multi-texturing)\n";
     std::cout << " Y: Shrek a toaleta (Ruzne modely s ruznymi texturami a Phongem)\n";
     std::cout << " U: Skybox (Seamless cubemap kostka)\n";
     std::cout << " I: Ucebna EB408 (Model ucebny, dvere, tabule se ZPG vzorci, stoly, zidle, osvetleni)\n";
+    std::cout << " F: Zapnout / vypnout baterku (reflektor svitici ve smeru kamery)\n";
     std::cout << " P: Prepnout zpusob resize okna (aktualizace perspektivy a viewportu)\n";
     std::cout << "============================================================\n";
 }
@@ -210,6 +221,12 @@ void Application::run() {
              camera->processKeyboard(Camera::Movement::RIGHT, deltaTime);
          }
         
+        // Aktualizace pozice a směru baterky podle kamery
+        if (flashlight) {
+            flashlight->setStaticPosition(camera->getPos());
+            flashlight->direction = camera->getFront();
+            flashlight->enabled = flashlightEnabled;
+        }
 
         scenes[currentSceneIndex]->update(deltaTime);
         scenes[currentSceneIndex]->draw();
@@ -249,6 +266,16 @@ void Application::key_callback(GLFWwindow* window, int key, int, int action, int
                 app->camera->setPosition(glm::vec3(0.0f, 1.7f, 6.5f));
             }
             std::cout << "[SCENA]: Prepnuto na ucebnu EB408. Stisknete 'C' pro filmovy prulet.\n";
+        }
+
+        if (key == GLFW_KEY_F) {
+            app->flashlightEnabled = !app->flashlightEnabled;
+            if (app->flashlight) {
+                app->flashlight->enabled = app->flashlightEnabled;
+            }
+            std::cout << "[BATERKA / REFLEKTOR]: "
+                      << (app->flashlightEnabled ? "ZAPNUTO" : "VYPNUTO")
+                      << " (sviti ve smeru pohledu kamery)\n";
         }
 
         if (key == GLFW_KEY_P) {

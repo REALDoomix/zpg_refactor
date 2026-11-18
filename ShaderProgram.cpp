@@ -101,8 +101,11 @@ void ShaderProgram::sendLights(const std::vector<std::shared_ptr<Light>>& lights
         sendUniform(singleLightLoc, lights[0]->getPosition());
     }
 
-    // Podpora pro pole světel (např. shaders/newPhong.frag)
+    // Podpora pro pole světel (numLights nebo numberOfLights dle zadání)
     GLint numLightsLoc = glGetUniformLocation(programId, "numLights");
+    if (numLightsLoc == -1) {
+        numLightsLoc = glGetUniformLocation(programId, "numberOfLights");
+    }
     if (numLightsLoc == -1) {
         return;
     }
@@ -117,18 +120,34 @@ void ShaderProgram::sendLights(const std::vector<std::shared_ptr<Light>>& lights
 
         GLint posLoc = glGetUniformLocation(programId, (base + "position").c_str());
         GLint colLoc = glGetUniformLocation(programId, (base + "color").c_str());
+        GLint diffLoc = glGetUniformLocation(programId, (base + "diffuse").c_str());
+        GLint specLoc = glGetUniformLocation(programId, (base + "specular").c_str());
         GLint typeLoc = glGetUniformLocation(programId, (base + "type").c_str());
         GLint dirLoc = glGetUniformLocation(programId, (base + "direction").c_str());
         GLint constLoc = glGetUniformLocation(programId, (base + "constant").c_str());
         GLint linLoc = glGetUniformLocation(programId, (base + "linear").c_str());
         GLint quadLoc = glGetUniformLocation(programId, (base + "quadratic").c_str());
+        GLint cutoffLoc = glGetUniformLocation(programId, (base + "spotCutoff").c_str());
+
+        // Pokud je světlo vypnuté (např. zhasnutá baterka), předáme barvu 0
+        glm::vec3 effectiveColor = lights[i]->enabled ? lights[i]->color : glm::vec3(0.0f);
 
         if (posLoc != -1) sendUniform(posLoc, lights[i]->getPosition());
-        if (colLoc != -1) sendUniform(colLoc, lights[i]->color);
+        if (colLoc != -1) sendUniform(colLoc, effectiveColor);
+        if (diffLoc != -1) sendUniform(diffLoc, glm::vec4(effectiveColor, 1.0f));
+        if (specLoc != -1) sendUniform(specLoc, glm::vec4(effectiveColor, 1.0f));
         if (typeLoc != -1) sendUniform(typeLoc, static_cast<int>(lights[i]->type));
         if (dirLoc != -1) sendUniform(dirLoc, lights[i]->direction);
         if (constLoc != -1) sendUniform(constLoc, lights[i]->constant);
         if (linLoc != -1) sendUniform(linLoc, lights[i]->linear);
         if (quadLoc != -1) sendUniform(quadLoc, lights[i]->quadratic);
+        if (cutoffLoc != -1) sendUniform(cutoffLoc, lights[i]->spotCutoff);
+    }
+}
+
+void ShaderProgram::bindUniformBlock(const std::string& blockName, GLuint bindingPoint) const {
+    GLuint blockIndex = glGetUniformBlockIndex(programId, blockName.c_str());
+    if (blockIndex != GL_INVALID_INDEX) {
+        glUniformBlockBinding(programId, blockIndex, bindingPoint);
     }
 }

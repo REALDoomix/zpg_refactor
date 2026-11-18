@@ -16,6 +16,7 @@
 class Scene;
 class Model;
 class ShaderProgram;
+class Light;
 
 class Application {
 public:
@@ -51,6 +52,10 @@ private:
     // Demonstrace (c, d): Správná vs. chybná aktualizace viewportu a perspektivy při změně velikosti okna
     bool enableCorrectResize = true;
     float tourTime = 0.0f;
+
+    // Reflektor (baterka) sledující kameru
+    std::shared_ptr<Light> flashlight = nullptr;
+    bool flashlightEnabled = false;
 
     static void error_callback(int error, const char* description);
     static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);

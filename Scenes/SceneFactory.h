@@ -18,7 +18,7 @@ public:
     static std::unique_ptr<Scene> createLightScene(ShaderManager& shaderManager, ModelManager& models);
     static std::unique_ptr<Scene> createNormalDemoScene(ShaderManager& shaderManager, ModelManager& models);
     static std::unique_ptr<Scene> createSpecularBleedDemoScene(ShaderManager& shaderManager, ModelManager& models);
-    static std::unique_ptr<Scene> createNightForestScene(ShaderManager& shaderManager, ModelManager& models);
+    static std::unique_ptr<Scene> createNightForestScene(ShaderManager& shaderManager, ModelManager& models, std::shared_ptr<Light> flashlight = nullptr);
 
     // New texture scenes
     static std::unique_ptr<Scene> createTextureDemoScene(ShaderManager& shaderManager, ModelManager& models, TextureManager& textures);

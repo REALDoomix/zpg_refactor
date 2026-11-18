@@ -10,11 +10,12 @@ uniform vec3 viewPosition;
 struct Light {
     vec3 position;
     vec3 color;
-    int type; // 0 = point, 1 = directional
+    int type; // 0 = point, 1 = directional, 2 = spotlight
     vec3 direction;
     float constant;
     float linear;
     float quadratic;
+    float spotCutoff;
 };
 
 #define MAX_LIGHTS 8
@@ -60,6 +61,16 @@ void main()
             float diff = max(dot(N, L), 0.0);
             vec3 H = normalize(L + V);
             float spec = (diff > 0.0) ? pow(max(dot(N, H), 0.0), 32.0) : 0.0;
+
+            // Reflektor (spotlight): test na kužel světla
+            if (lights[i].type == 2) {
+                vec3 spotDir = normalize(lights[i].direction);
+                float spot = dot(spotDir, -L);
+                if (spot < lights[i].spotCutoff) {
+                    diff = 0.0;
+                    spec = 0.0;
+                }
+            }
 
             totalDiffuse += diff * lights[i].color * attenuation;
             totalSpecular += spec * lights[i].color * attenuation * 0.3;

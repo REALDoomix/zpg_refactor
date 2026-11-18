@@ -91,3 +91,40 @@ inline void addOrbit(TransformationComposite& composite, float speedDegreesPerSe
     composite.add(std::make_unique<DynamicRotateTransformation>(speedDegreesPerSecond, glm::vec3(0.0f, 1.0f, 0.0f)));
     composite.add(std::make_unique<TranslateTransformation>(glm::vec3(radius, 0.0f, 0.0f)));
 }
+
+// Dynamická transformace pro náhodný, plynulý 3D let světlušky
+class DynamicFireflyTransformation : public ITransformation {
+private:
+    glm::vec3 center;
+    glm::vec3 amplitudes;
+    glm::vec3 frequencies;
+    glm::vec3 phases;
+    glm::vec3 currentPosition;
+    float time = 0.0f;
+
+public:
+    DynamicFireflyTransformation(const glm::vec3& center, const glm::vec3& amplitudes, const glm::vec3& frequencies)
+        : center(center), amplitudes(amplitudes), frequencies(frequencies), currentPosition(center) {
+        phases.x = (static_cast<float>(std::rand()) / RAND_MAX) * 6.2831853f;
+        phases.y = (static_cast<float>(std::rand()) / RAND_MAX) * 6.2831853f;
+        phases.z = (static_cast<float>(std::rand()) / RAND_MAX) * 6.2831853f;
+    }
+
+    void update(float deltaTime) override {
+        time += deltaTime;
+        // Plynulý složený harmonický pohyb v prostoru (nepravidelná trajektorie)
+        currentPosition.x = center.x + amplitudes.x * std::sin(frequencies.x * time + phases.x)
+                                     + (amplitudes.x * 0.35f) * std::cos(frequencies.z * 1.6f * time);
+        currentPosition.y = center.y + amplitudes.y * std::sin(frequencies.y * time + phases.y);
+        currentPosition.z = center.z + amplitudes.z * std::cos(frequencies.z * time + phases.z)
+                                     + (amplitudes.z * 0.35f) * std::sin(frequencies.x * 1.4f * time);
+    }
+
+    glm::mat4 getMatrix() const override {
+        return glm::translate(glm::mat4(1.0f), currentPosition);
+    }
+
+    glm::vec3 getPosition() const {
+        return currentPosition;
+    }
+};

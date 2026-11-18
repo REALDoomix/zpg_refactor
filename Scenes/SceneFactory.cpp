@@ -271,7 +271,7 @@ std::unique_ptr<Scene> SceneFactory::createSpecularBleedDemoScene(ShaderManager&
     return scene;
 }
 
-std::unique_ptr<Scene> SceneFactory::createNightForestScene(ShaderManager& shaderManager, ModelManager& models)
+std::unique_ptr<Scene> SceneFactory::createNightForestScene(ShaderManager& shaderManager, ModelManager& models, std::shared_ptr<Light> flashlight)
 {
     auto scene = std::make_unique<Scene>();
     Model& treeModel = models.get("tree");
@@ -283,42 +283,49 @@ std::unique_ptr<Scene> SceneFactory::createNightForestScene(ShaderManager& shade
     ShaderProgram& nightForestShader = shaderManager.get("night_forest");
     ShaderProgram& basicShader = shaderManager.get("basic");
 
-	auto fireflyTransform = std::make_shared<TransformationComposite>();
-	constexpr float fireFlyOrbitSpeed = 35.0f, fireflyOrbitRadius = 3.0f;
-	addOrbit(*fireflyTransform, fireFlyOrbitSpeed, fireflyOrbitRadius);
+    // 1. Směrové světlo: slabý namodralý měsíční svit shora
+    auto moonLight = scene->addLight(glm::vec3(0.0f, 15.0f, 0.0f), glm::vec3(0.06f, 0.09f, 0.16f));
+    moonLight->type = LightType::DIRECTIONAL;
+    moonLight->direction = glm::vec3(-0.3f, -1.0f, -0.2f);
 
-    fireflyTransform->add(std::make_unique<ScaleTransformation>(glm::vec3(0.04f)));
+    // 2. Reflektor (baterka hráče vázaná na kameru), pokud je k dispozici
+    if (flashlight) {
+        scene->addLight(flashlight);
+    }
 
-    // Světlo světlušky: teplé žlutozelené světlo s výrazným útlumem pro omezený dosvit
-    auto fireflyLight = scene->addLight(fireflyTransform, glm::vec3(1.0f, 0.95f, 0.35f));
-    fireflyLight->constant = 0.1f;
-    fireflyLight->linear = 0.18f;
-    fireflyLight->quadratic = 0.125f;
+    // 3. Více bodových světel: světlušky s náhodným plynulým 3D pohybem
+    struct FireflyParam {
+        glm::vec3 center;
+        glm::vec3 amplitudes;
+        glm::vec3 frequencies;
+        glm::vec3 color;
+    };
 
-    // Vizuální tělo světlušky (zářící kulička)
-    scene->addDrawable(sphereModel, basicShader)
-        .setTransformation(fireflyTransform)
-        .setColor(glm::vec3(1.0f, 1.0f, 0.5f));
+    std::vector<FireflyParam> fireflyParams = {
+        { glm::vec3(-2.0f, 0.9f, -1.2f), glm::vec3(1.8f, 0.45f, 1.5f), glm::vec3(0.8f, 1.3f, 0.7f), glm::vec3(1.0f, 0.95f, 0.35f) },
+        { glm::vec3( 2.2f, 1.1f, -2.5f), glm::vec3(2.0f, 0.55f, 1.7f), glm::vec3(0.6f, 0.9f, 1.1f), glm::vec3(0.8f, 1.0f, 0.3f) },
+        { glm::vec3( 0.0f, 0.7f, -3.2f), glm::vec3(1.5f, 0.40f, 2.0f), glm::vec3(1.1f, 1.4f, 0.8f), glm::vec3(1.0f, 0.75f, 0.2f) },
+        { glm::vec3(-3.2f, 1.2f, -3.8f), glm::vec3(1.7f, 0.60f, 1.4f), glm::vec3(0.7f, 0.8f, 1.3f), glm::vec3(0.9f, 0.95f, 0.4f) },
+        { glm::vec3( 1.5f, 0.8f,  0.2f), glm::vec3(2.1f, 0.50f, 1.6f), glm::vec3(0.9f, 1.1f, 0.6f), glm::vec3(0.7f, 1.0f, 0.55f) }
+    };
 
+    for (const auto& fp : fireflyParams) {
+        auto flyComposite = std::make_shared<TransformationComposite>();
+        flyComposite->add(std::make_unique<DynamicFireflyTransformation>(fp.center, fp.amplitudes, fp.frequencies));
 
-    auto fireflyTransform2 = std::make_shared<TransformationComposite>();
+        // Bodové světlo světlušky s výrazným kvadratickým útlumem
+        auto flyLight = scene->addLight(flyComposite, fp.color);
+        flyLight->type = LightType::POINT;
+        flyLight->constant = 0.1f;
+        flyLight->linear = 0.22f;
+        flyLight->quadratic = 0.15f;
 
-    fireflyTransform2->add(std::make_unique<RotateTransformation>(180.0f, glm::vec3(0.0f, 1.0f, 0.0f)));
-
-    addOrbit(*fireflyTransform2, fireFlyOrbitSpeed, fireflyOrbitRadius);
-
-    fireflyTransform2->add(std::make_unique<ScaleTransformation>(glm::vec3(0.04f)));
-
-    // Světlo světlušky: teplé žlutozelené světlo s výrazným útlumem pro omezený dosvit
-    auto fireflyLight2 = scene->addLight(fireflyTransform2, glm::vec3(1.0f, 0.95f, 0.35f));
-    fireflyLight2->constant = 0.1f;
-    fireflyLight2->linear = 0.18f;
-    fireflyLight2->quadratic = 0.125f;
-
-    // Vizuální tělo světlušky (zářící kulička)
-    scene->addDrawable(sphereModel, basicShader)
-        .setTransformation(fireflyTransform2)
-        .setColor(glm::vec3(1.0f, 1.0f, 0.5f));
+        // Vizuální tělo světlušky (malá zářící kulička)
+        flyComposite->add(std::make_unique<ScaleTransformation>(glm::vec3(0.04f)));
+        scene->addDrawable(sphereModel, basicShader)
+            .setTransformation(flyComposite)
+            .setColor(fp.color);
+    }
 
     constexpr int treeCount = 55;
     for (int i = 0; i < treeCount; i++) {

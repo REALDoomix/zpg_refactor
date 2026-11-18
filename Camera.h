@@ -20,6 +20,8 @@ public:
     glm::mat4 getViewMatrix() const;
     glm::mat4 getProjectionMatrix() const;
 	glm::vec3 getPos() const { return eye; }
+	glm::vec3 getFront() const { return glm::normalize(computeTarget()); }
+	glm::vec3 getDirection() const { return glm::normalize(computeTarget()); }
 
     void setAspectRatio(float aspectRatio);
     void setPosition(const glm::vec3& newEye, float newAlpha = 1.5707963f, float newFi = -1.5707963f);
