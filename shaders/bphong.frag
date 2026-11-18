@@ -19,7 +19,7 @@ void main(void){
     vec3 diffuse = diff * baseColor;
 
     vec3 viewDir = normalize(viewPosition - vec3(worldPosition));
-    vec3 halfwayDir = normalize(lightDir + viewDir);  // the defining difference from Phong
+    vec3 halfwayDir = normalize(lightDir + viewDir); // hlavní změna oproti phongu
     float spec = pow(max(dot(normal, halfwayDir), 0.0), 32.0);
     vec3 specular = spec * vec3(1.0);
 

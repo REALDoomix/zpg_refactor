@@ -5,12 +5,13 @@
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
 #include <glm/vec4.hpp>
-
 #include <glm/gtc/type_ptr.hpp>
-
 #include <glad/gl.h>
+#include <vector>
+#include <memory>
 
 class Camera;
+class Light;
 
 class ShaderProgram : public IObserver {
 public:
@@ -23,8 +24,8 @@ public:
     void use() const;
     GLuint getProgram() const { return programId; }
 
-	void setCamera(Camera* newCamera);
-	void onCameraChanged() override;
+    void setCamera(Camera* newCamera);
+    void onCameraChanged() override;
 
     // Přetížené sendUniform funkce
     void sendUniform(GLint location, float value) const;
@@ -33,8 +34,10 @@ public:
     void sendUniform(GLint location, const glm::vec3& vec) const;
     void sendUniform(GLint location, const glm::mat3& mat) const;
     void sendUniform(GLint location, const glm::vec4& vec) const;
-	void sendUniform(GLint location, const glm::mat4& mat) const;
-	void setLightPosition(const glm::vec3& position);
+    void sendUniform(GLint location, const glm::mat4& mat) const;
+    void setLightPosition(const glm::vec3& position);
+
+    void sendLights(const std::vector<std::shared_ptr<Light>>& lights) const;
 
 private:
     Shader vertexShader;
@@ -43,7 +46,7 @@ private:
 
     Camera* camera = nullptr;
     GLint viewMatrixLoc = -1;
-	GLint projectionMatrixLoc = -1;
-	GLint lightPositionLoc = -1;
-	GLint viewPositionLoc = -1;
+    GLint projectionMatrixLoc = -1;
+    GLint lightPositionLoc = -1;
+    GLint viewPositionLoc = -1;
 };

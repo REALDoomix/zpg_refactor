@@ -4,7 +4,7 @@
 
 #include "./Scenes/SceneFactory.h"
 
-//modely
+// modely
 #include "Models/bushes.h"
 #include "Models/vsbLogin.h"
 #include "Models/tree.h"
@@ -16,14 +16,15 @@
 #include "Models/sun.h"
 #include "Models/clock.h"
 #include "Models/ground.h"
-
+#include "Models/plain.h"
 
 #include <glm/vec2.hpp>
 
 #include <cstdlib>
 #include <ctime>
-
 #include <iostream>
+#include <algorithm>
+#include <cmath>
 #include <stdexcept>
 
 Application::Application() = default;
@@ -35,7 +36,7 @@ Application::~Application() {
 }
 
 void Application::initialization() {
-    //start randomizer
+    // start randomizer
     std::srand(static_cast<unsigned int>(std::time(nullptr)));
 
     glfwSetErrorCallback(error_callback);
@@ -44,7 +45,7 @@ void Application::initialization() {
         throw std::runtime_error("Unable to initialize GLFW");
     }
 
-    window = glfwCreateWindow(width, height, "ZPG", nullptr, nullptr);
+    window = glfwCreateWindow(width, height, "ZPG - Ales Najser - NAJ0062", nullptr, nullptr);
     if (!window) {
         glfwTerminate();
         throw std::runtime_error("Unable to create GLFW window");
@@ -56,18 +57,22 @@ void Application::initialization() {
     glfwSetKeyCallback(window, key_callback);
     glfwSetFramebufferSizeCallback(window, window_size_callback);
 
-
     // myš
-
-	glfwSetWindowUserPointer(window, this);
-	glfwSetCursorPosCallback(window, cursor_position_callback);
-	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+    glfwSetWindowUserPointer(window, this);
+    glfwSetCursorPosCallback(window, cursor_position_callback);
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
 
     if (!gladLoadGL((GLADloadfunc)glfwGetProcAddress)) {
         throw std::runtime_error("GLAD initialization failed");
     }
 
     glEnable(GL_DEPTH_TEST);
+    glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
+
+    // Test na maximální počet najednou použitelných texturovacích jednotek (podle zadání cv.)
+    int maxTextureUnits = 0;
+    glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS, &maxTextureUnits);
+    printf("GL_MAX_TEXTURE_IMAGE_UNITS: %d\n", maxTextureUnits);
 
     modelManager.load("bush", ::bushes, sizeof(::bushes));
     modelManager.load("tree", ::tree, sizeof(::tree));
@@ -75,6 +80,7 @@ void Application::initialization() {
     modelManager.load("triangle", ::triangle, sizeof(::triangle));
     modelManager.load("login", ::login, sizeof(::login));
     modelManager.load("ground", ::ground, sizeof(::ground));
+    modelManager.loadWithUV("plain", ::plain, sizeof(::plain));
 
     modelManager.load("sun", ::sun, sizeof(::sun), true);
     modelManager.load("earth", ::earth, sizeof(::earth), true);
@@ -83,8 +89,42 @@ void Application::initialization() {
 
     modelManager.load("clock", ::clockModel, sizeof(::clockModel), true, true);
 
+    // Načtení OBJ modelů s UV souřadnicemi
+    modelManager.loadOBJ("shrek", "Models/shrek.obj");
+    modelManager.loadOBJ("toilet", "Models/toiled.obj");
+    modelManager.loadOBJ("fiona", "Models/fiona.obj");
+    modelManager.loadOBJ("skybox", "Models/skybox.obj");
 
-    // new
+    // Načtení OBJ modelů učebny EB408
+    modelManager.loadOBJ("EB408", "Models/EB408.obj");
+    modelManager.loadOBJ("Door", "Models/Door.obj");
+    modelManager.loadOBJ("Whiteboard", "Models/Whiteboard.obj");
+    modelManager.loadOBJ("table", "Models/table.obj");
+    modelManager.loadOBJ("OrangeChair", "Models/OrangeChair.obj");
+
+    // Načtení textur pomocí stb_image
+    textureManager.load("wooden_fence", "Models/Textures/wooden_fence.png");
+    textureManager.load("shrek", "Models/Textures/shrek.png");
+    textureManager.load("toilet", "Models/Textures/toiled.jpg");
+    textureManager.load("fiona", "Models/Textures/fiona.png");
+
+    // Textury učebny EB408
+    textureManager.load("EB408", "Models/Textures/T_EB408.png");
+    textureManager.load("Door", "Models/Textures/T_door_basecolor.png");
+    textureManager.load("Whiteboard", "Models/Textures/T_Whiteboard_BaseColor.png");
+    textureManager.load("table", "Models/Textures/T_Table_BaseColor.png");
+    textureManager.load("OrangeChair", "Models/Textures/T_OrangeChair_BaseColor.png");
+
+    std::vector<std::string> skyboxFaces = {
+        "Models/Textures/skybox/posx.jpg",
+        "Models/Textures/skybox/negx.jpg",
+        "Models/Textures/skybox/posy.jpg",
+        "Models/Textures/skybox/negy.jpg",
+        "Models/Textures/skybox/posz.jpg",
+        "Models/Textures/skybox/negz.jpg"
+    };
+    textureManager.loadCubeMap("skybox", skyboxFaces);
+
     camera = std::make_unique<Camera>(glm::vec3(0.0f, 0.0f, 4.0f), static_cast<float>(width) / static_cast<float>(height));
 
     shaderManager.load("basic", "shaders/basic.vert", "shaders/basic.frag");
@@ -94,18 +134,56 @@ void Application::initialization() {
     shaderManager.load("lambert", "shaders/phong.vert", "shaders/lambert.frag");
     shaderManager.load("phong", "shaders/phong.vert", "shaders/phong.frag");
     shaderManager.load("blinn", "shaders/phong.vert", "shaders/bphong.frag");
+    shaderManager.load("light", "shaders/phong.vert", "shaders/newPhong.frag");
+    shaderManager.load("bad_normal", "shaders/phong_bad_normal.vert", "shaders/phong.frag");
+    shaderManager.load("phong_bleed", "shaders/phong.vert", "shaders/phong_bleed.frag");
+    shaderManager.load("phong_clipped", "shaders/phong.vert", "shaders/phong_clipped.frag");
+    shaderManager.load("night_tree", "shaders/night_tree.vert", "shaders/night_forest.frag");
+    shaderManager.load("night_forest", "shaders/phong.vert", "shaders/night_forest.frag");
+
+    // Nové shadery pro textury, multi-texturing a skybox
+    shaderManager.load("texture", "shaders/texture.vert", "shaders/texture.frag");
+    shaderManager.load("multi_texture", "shaders/texture.vert", "shaders/multi_texture.frag");
+    shaderManager.load("texture_phong", "shaders/texture.vert", "shaders/texture_phong.frag");
+    shaderManager.load("skybox", "shaders/skybox.vert", "shaders/skybox.frag");
+    // Classroom shader with balanced lighting
+    shaderManager.load("classroom", "shaders/texture.vert", "shaders/classroom.frag");
 
     shaderManager.setCamera(camera.get());
 
-    
+    scenes.push_back(SceneFactory::createTriangleScene(shaderManager, modelManager));          // 1
+    scenes.push_back(SceneFactory::createSphereScene(shaderManager, modelManager));            // 2 (Více světel + dynamické světlo)
+    scenes.push_back(SceneFactory::createForestScene(shaderManager, modelManager));            // 3 (Denní les)
+    scenes.push_back(SceneFactory::createLoginScene(shaderManager, modelManager));             // 4
+    scenes.push_back(SceneFactory::createSolarSystemScene(shaderManager, modelManager));        // 5
+    scenes.push_back(SceneFactory::createLightScene(shaderManager, modelManager));             // 6 (4 koule - Ambient, Lambert, Phong, Blinn)
+    scenes.push_back(SceneFactory::createNormalDemoScene(shaderManager, modelManager));        // 7 (Demonstrace chybného vs správného převodu normál)
+    scenes.push_back(SceneFactory::createSpecularBleedDemoScene(shaderManager, modelManager)); // 8 (Demonstrace přesvitu na odvrácené straně s mocninou 1 vs ořezání)
+    scenes.push_back(SceneFactory::createNightForestScene(shaderManager, modelManager));       // 9 (Noční les s létající světluškou a útlumem světla)
+    scenes.push_back(SceneFactory::createTextureDemoScene(shaderManager, modelManager, textureManager));  // 0 (Jedna textura na plain)
+    scenes.push_back(SceneFactory::createMultiTextureScene(shaderManager, modelManager, textureManager)); // T (Více textur na jednom modelu)
+    scenes.push_back(SceneFactory::createShrekScene(shaderManager, modelManager, textureManager));        // Y (Shrek a toaleta s texturami a osvětlením)
+    scenes.push_back(SceneFactory::createSkyboxScene(shaderManager, modelManager, textureManager));       // U (Skybox s cubemapou a objekty)
+    scenes.push_back(SceneFactory::createEB408Scene(shaderManager, modelManager, textureManager));       // I (Učebna EB408 s tabulí, nábytkem a světly)
 
-    scenes.push_back(SceneFactory::createTriangleScene(shaderManager, modelManager));
-    scenes.push_back(SceneFactory::createSphereScene(shaderManager, modelManager));
-    scenes.push_back(SceneFactory::createForestScene(shaderManager, modelManager));
-    scenes.push_back(SceneFactory::createLoginScene(shaderManager, modelManager));
-    scenes.push_back(SceneFactory::createSolarSystemScene(shaderManager, modelManager));
-    scenes.push_back(SceneFactory::createLightScene(shaderManager, modelManager));
-
+    std::cout << "=========================NAJ0062============================\n";
+    std::cout << "  Ovladani klavesami 1 - 9, 0, T, Y, U, I:\n";
+    std::cout << " 1: Triangle\n";
+    std::cout << " 2: Pole svetel (cervene, modre + obihajici zlute)\n";
+    std::cout << " 3: Denni les\n";
+    std::cout << " 4: VSB Login\n";
+    std::cout << " 5: Slunecni soustava\n";
+    std::cout << " 6: 4 modely osvetleni\n";
+    std::cout << " 7: Demonstrace prevodu normal (chybny vlevo vs spravny vpravo)\n";
+    std::cout << " 8: Presvit zrcadlove slozky (chybny vlevo vs orezany vpravo)\n";
+    std::cout << " 9: Nocni les se svetluskou (point light s utlumem)\n";
+    std::cout << " 0: Jedna textura (Plain s texturou dreveneho plotu)\n";
+    std::cout << " T: Vice textur na jednom modelu (Multi-texturing)\n";
+    std::cout << " Y: Shrek a toaleta (Ruzne modely s ruznymi texturami a Phongem)\n";
+    std::cout << " U: Skybox (Seamless cubemap kostka)\n";
+    std::cout << " I: Ucebna EB408 (Model ucebny, dvere, tabule se ZPG vzorci, stoly, zidle, osvetleni)\n";
+    std::cout << " P: Prepnout zpusob resize okna (aktualizace perspektivy a viewportu)\n";
+    std::cout << "============================================================\n";
 }
 
 void Application::run() {
@@ -118,29 +196,26 @@ void Application::run() {
         float deltaTime = currentTime - lastTime;
         lastTime = currentTime;
 
-        if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
-			// MOVE FORWARD
-			camera->processKeyboard(Camera::Movement::FORWARD, deltaTime);
-        }
-        if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
-            // MOVE BACKWARD
-            camera->processKeyboard(Camera::Movement::BACKWARD, deltaTime);
-        }
-
-        if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
-            // MOVE LEFT
-            camera->processKeyboard(Camera::Movement::LEFT, deltaTime);
-        }
-        if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
-            // MOVE RIGHT
-            camera->processKeyboard(Camera::Movement::RIGHT, deltaTime);
-        }
+       
+         if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
+             camera->processKeyboard(Camera::Movement::FORWARD, deltaTime);
+         }
+         if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
+             camera->processKeyboard(Camera::Movement::BACKWARD, deltaTime);
+         }
+         if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
+             camera->processKeyboard(Camera::Movement::LEFT, deltaTime);
+         }
+         if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
+             camera->processKeyboard(Camera::Movement::RIGHT, deltaTime);
+         }
+        
 
         scenes[currentSceneIndex]->update(deltaTime);
         scenes[currentSceneIndex]->draw();
         glfwSwapBuffers(window);
         glfwPollEvents();
-    }
+    }    
 }
 
 void Application::error_callback(int error, const char* description) {
@@ -149,6 +224,8 @@ void Application::error_callback(int error, const char* description) {
 
 void Application::key_callback(GLFWwindow* window, int key, int, int action, int) {
     Application* app = static_cast<Application*>(glfwGetWindowUserPointer(window));
+    if (!app) return;
+
     if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
         glfwSetWindowShouldClose(window, GLFW_TRUE);
     }
@@ -159,17 +236,48 @@ void Application::key_callback(GLFWwindow* window, int key, int, int action, int
         if (key == GLFW_KEY_4) app->currentSceneIndex = 3;
         if (key == GLFW_KEY_5) app->currentSceneIndex = 4;
         if (key == GLFW_KEY_6) app->currentSceneIndex = 5;
+        if (key == GLFW_KEY_7) app->currentSceneIndex = 6;
+        if (key == GLFW_KEY_8) app->currentSceneIndex = 7;
+        if (key == GLFW_KEY_9) app->currentSceneIndex = 8;
+        if (key == GLFW_KEY_0) app->currentSceneIndex = 9;
+        if (key == GLFW_KEY_T) app->currentSceneIndex = 10;
+        if (key == GLFW_KEY_Y) app->currentSceneIndex = 11;
+        if (key == GLFW_KEY_U) app->currentSceneIndex = 12;
+        if (key == GLFW_KEY_I) {
+            app->currentSceneIndex = 13;
+            if (app->camera) {
+                app->camera->setPosition(glm::vec3(0.0f, 1.7f, 6.5f));
+            }
+            std::cout << "[SCENA]: Prepnuto na ucebnu EB408. Stisknete 'C' pro filmovy prulet.\n";
+        }
+
+        if (key == GLFW_KEY_P) {
+            app->enableCorrectResize = !app->enableCorrectResize;
+            std::cout << "[RESIZE MOD] Aktualizace perspektivy: "
+                      << (app->enableCorrectResize ? "ZAPNUTO (spravne, zadna deformace)" : "VYPNUTO (chybne, koule se deformuji pri resize)")
+                      << std::endl;
+        }
     }
 }
 
 void Application::window_size_callback(GLFWwindow*, int width, int height) {
-    glViewport(0, 0, width, height);
+    Application* app = static_cast<Application*>(glfwGetWindowUserPointer(glfwGetCurrentContext()));
+    if (!app || height <= 0) return;
 
-	Application* app = static_cast<Application*>(glfwGetWindowUserPointer(glfwGetCurrentContext()));
-
-	if (app && app->camera && height > 0) {
-		app->camera->setAspectRatio(static_cast<float>(width) / static_cast<float>(height));
-	}
+    if (app->enableCorrectResize) {
+        // SPRÁVNÁ AKTUALIZACE (d):
+        // 1. Nastavení viewportu přes celé nové okno
+        glViewport(0, 0, width, height);
+        // 2. Přepočet poměru stran (aspect ratio) v perspektivní matici kamery
+        if (app->camera) {
+            app->camera->setAspectRatio(static_cast<float>(width) / static_cast<float>(height));
+        }
+    } else {
+        // CHYBNÉ NASTAVENÍ (c):
+        // Viewport se sice roztáhne, ale poměr stran perspektivy zůstane starý -> deformace geometrie!
+        glViewport(0, 0, width, height);
+        std::cout << "[CHYBA RESIZE]: Poměr stran (aspectRatio) perspektivy NEBYL aktualizován! Zkuste roztáhnout okno.\n";
+    }
 }
 
 void Application::cursor_position_callback(GLFWwindow* window, double xpos, double ypos) {
@@ -187,8 +295,7 @@ void Application::cursor_position_callback(GLFWwindow* window, double xpos, doub
 
     app->lastMouseX = xpos;
     app->lastMouseY = ypos;
-	if (GLFW_PRESS == glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT)) {
-		app->camera->processMouse(xOffset, yOffset);
-	}
-   
+    if (GLFW_PRESS == glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT)) {
+        app->camera->processMouse(xOffset, yOffset);
+    }
 }

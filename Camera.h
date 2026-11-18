@@ -22,6 +22,7 @@ public:
 	glm::vec3 getPos() const { return eye; }
 
     void setAspectRatio(float aspectRatio);
+    void setPosition(const glm::vec3& newEye, float newAlpha = 1.5707963f, float newFi = -1.5707963f);
 
 	void processMouse(float xOffset, float yOffset);
 	void processKeyboard(Movement direction, float deltaTime);

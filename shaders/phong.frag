@@ -19,9 +19,9 @@ void main(void){
     vec3 diffuse = diff * baseColor;
 
     vec3 viewDir = normalize(viewPosition - vec3(worldPosition));
-    vec3 reflectDir = reflect(-lightDir, normal);  // reflect() expects the incident vector, hence -lightDir
-    float spec = pow(max(dot(viewDir, reflectDir), 0.0), 32.0);  // 32 = shininess
-    vec3 specular = spec * vec3(1.0);  // white highlight, typical convention
+    vec3 reflectDir = reflect(-lightDir, normal); // !!! musí být opačný vektor proti lightDir
+    float spec = pow(max(dot(viewDir, reflectDir), 0.0), 32.0);
+    vec3 specular = spec * vec3(1.0);  // bílý highlight
 
     vec3 ambient = 0.1 * baseColor;
 

@@ -32,6 +32,13 @@ void Camera::setAspectRatio(float newAspectRatio) {
     notifyObservers();
 }
 
+void Camera::setPosition(const glm::vec3& newEye, float newAlpha, float newFi) {
+    eye = newEye;
+    alpha = newAlpha;
+    fi = newFi;
+    notifyObservers();
+}
+
 void Camera::processMouse(float xOffset, float yOffset)
 {
     constexpr float sensitivity = 0.003f;
