@@ -27,6 +27,10 @@
 #include <cmath>
 #include <stdexcept>
 
+#include <glad/gl.h>
+#include <tracy/Tracy.hpp>
+#include <tracy/TracyOpenGL.hpp>
+
 Application::Application() = default;
 
 Application::~Application() {
@@ -65,6 +69,8 @@ void Application::initialization() {
     if (!gladLoadGL((GLADloadfunc)glfwGetProcAddress)) {
         throw std::runtime_error("GLAD initialization failed");
     }
+
+    TracyGpuContext;
 
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
@@ -127,27 +133,27 @@ void Application::initialization() {
 
     camera = std::make_unique<Camera>(glm::vec3(0.0f, 0.0f, 4.0f), static_cast<float>(width) / static_cast<float>(height));
 
-    shaderManager.load("basic", "shaders/basic.vert", "shaders/basic.frag");
-    shaderManager.load("tree", "shaders/tree.vert", "shaders/basic.frag");
-    shaderManager.load("clock", "shaders/clock.vert", "shaders/clock.frag");
-    shaderManager.load("ambient", "shaders/phong.vert", "shaders/ambient.frag");
-    shaderManager.load("lambert", "shaders/phong.vert", "shaders/lambert.frag");
-    shaderManager.load("phong", "shaders/phong.vert", "shaders/phong.frag");
-    shaderManager.load("blinn", "shaders/phong.vert", "shaders/bphong.frag");
-    shaderManager.load("light", "shaders/phong.vert", "shaders/newPhong.frag");
-    shaderManager.load("bad_normal", "shaders/phong_bad_normal.vert", "shaders/phong.frag");
-    shaderManager.load("phong_bleed", "shaders/phong.vert", "shaders/phong_bleed.frag");
-    shaderManager.load("phong_clipped", "shaders/phong.vert", "shaders/phong_clipped.frag");
-    shaderManager.load("night_tree", "shaders/night_tree.vert", "shaders/night_forest.frag");
-    shaderManager.load("night_forest", "shaders/phong.vert", "shaders/night_forest.frag");
+    shaderManager.load("basic", "shaders/Vertex/basic.vert", "shaders/Fragment/basic.frag");
+    shaderManager.load("tree", "shaders/Vertex/tree.vert", "shaders/Fragment/basic.frag");
+    shaderManager.load("clock", "shaders/Vertex/clock.vert", "shaders/Fragment/clock.frag");
+    shaderManager.load("ambient", "shaders/Vertex/phong.vert", "shaders/Fragment/ambient.frag");
+    shaderManager.load("lambert", "shaders/Vertex/phong.vert", "shaders/Fragment/lambert.frag");
+    shaderManager.load("phong", "shaders/Vertex/phong.vert", "shaders/Fragment/phong.frag");
+    shaderManager.load("blinn", "shaders/Vertex/phong.vert", "shaders/Fragment/bphong.frag");
+    shaderManager.load("light", "shaders/Vertex/phong.vert", "shaders/Fragment/newPhong.frag");
+    shaderManager.load("bad_normal", "shaders/Vertex/phong_bad_normal.vert", "shaders/Fragment/phong.frag");
+    shaderManager.load("phong_bleed", "shaders/Vertex/phong.vert", "shaders/Fragment/phong_bleed.frag");
+    shaderManager.load("phong_clipped", "shaders/Vertex/phong.vert", "shaders/Fragment/phong_clipped.frag");
+    shaderManager.load("night_tree", "shaders/Vertex/night_tree.vert", "shaders/Fragment/night_forest.frag");
+    shaderManager.load("night_forest", "shaders/Vertex/phong.vert", "shaders/Fragment/night_forest.frag");
 
     // Nové shadery pro textury, multi-texturing a skybox
-    shaderManager.load("texture", "shaders/texture.vert", "shaders/texture.frag");
-    shaderManager.load("multi_texture", "shaders/texture.vert", "shaders/multi_texture.frag");
-    shaderManager.load("texture_phong", "shaders/texture.vert", "shaders/texture_phong.frag");
-    shaderManager.load("skybox", "shaders/skybox.vert", "shaders/skybox.frag");
+    shaderManager.load("texture", "shaders/Vertex/texture.vert", "shaders/Fragment/texture.frag");
+    shaderManager.load("multi_texture", "shaders/Vertex/texture.vert", "shaders/Fragment/multi_texture.frag");
+    shaderManager.load("texture_phong", "shaders/Vertex/texture.vert", "shaders/Fragment/texture_phong.frag");
+    shaderManager.load("skybox", "shaders/Vertex/skybox.vert", "shaders/Fragment/skybox.frag");
     // Classroom shader with balanced lighting
-    shaderManager.load("classroom", "shaders/texture.vert", "shaders/classroom.frag");
+    shaderManager.load("classroom", "shaders/Vertex/texture.vert", "shaders/Fragment/classroom.frag");
 
     shaderManager.setCamera(camera.get());
 
@@ -201,6 +207,8 @@ void Application::run() {
     float lastTime = static_cast<float>(glfwGetTime());
 
     while (!glfwWindowShouldClose(window)) {
+        ZoneScopedN("Frame");
+
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         float currentTime = static_cast<float>(glfwGetTime());
@@ -228,10 +236,24 @@ void Application::run() {
             flashlight->enabled = flashlightEnabled;
         }
 
+        {
+            ZoneScopedN("SceneUpdate");
+            scenes[currentSceneIndex]->update(deltaTime);
+        }
+
+        {
+            TracyGpuZone("SceneDrawGPU"); // <-- Measures GPU time for the active scene
+            scenes[currentSceneIndex]->draw();
+        }
+
+
         scenes[currentSceneIndex]->update(deltaTime);
         scenes[currentSceneIndex]->draw();
         glfwSwapBuffers(window);
         glfwPollEvents();
+
+        TracyGpuCollect; // <-- Collects GPU timestamps from OpenGL
+        FrameMark;       // <-- Tells Tracy a frame just finished
     }    
 }
 
